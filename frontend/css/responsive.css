@@ -334,6 +334,30 @@
   }
 }
 
+@media (max-width: 480px) {
+  .topbar {
+    align-items: flex-start;
+  }
+
+  .topbar .brand-area,
+  .topbar > .brand {
+    min-width: 0;
+  }
+
+  .theme-controls button {
+    min-width: 46px;
+    padding: 7px 8px;
+  }
+
+  .map-header {
+    flex-wrap: wrap;
+  }
+
+  .map-header .theme-controls {
+    margin-left: auto;
+  }
+}
+
 /* ====================================================
    LARGE DESKTOP / WIDE SCREEN (1000px+)
    ==================================================== */
@@ -351,14 +375,15 @@
   }
 
   .app-shell {
-    margin: 32px auto;
+    margin: 0 auto;
     min-height: calc(100vh - 64px);
-    max-width: 820px;
-    border-radius: var(--radius-lg);
+    max-width: 1280px;
+    width: min(100%, 1280px);
+    border-radius: 0;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--color-border);
-    padding: 0 32px 100px;
+    padding: 0 72px 110px;
   }
 
   [data-theme="dark"] .app-shell {
@@ -366,8 +391,8 @@
   }
 
   .bottom-nav {
-    max-width: 820px;
-    width: calc(100% - 64px);
+    max-width: 1120px;
+    width: calc(100% - 120px);
     bottom: 28px;
     padding: 14px 10px;
   }
@@ -722,20 +747,52 @@
   }
 }
 
+/* Desktop canvas and shared button polish */
+@media (min-width: 1000px) {
+  .hero, .results, .secondary-cta, #route-actions {
+    max-width: 1080px;
+    margin-left: auto;
+    margin-right: auto;
+  }
+
+  #map {
+    max-width: 1080px;
+    height: 390px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+}
+
+.btn-primary, .btn-login, .google-btn, .search-box button, .btn-secondary-cta,
+.btn-white, .btn-inverse, button {
+  border-radius: 999px;
+  transition: transform .2s ease, box-shadow .2s ease, background-color .2s ease;
+}
+
+.btn-primary:hover, .btn-login:hover, .google-btn:hover, .search-box button:hover,
+.btn-secondary-cta:hover, .btn-white:hover, .btn-inverse:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 26px rgba(11, 110, 79, .24);
+}
+
+.btn-primary:active, .btn-login:active, .google-btn:active, button:active {
+  transform: translateY(0) scale(.98);
+}
+
 /* ====================================================
    EXTRA LARGE SCREENS (1400px+)
    ==================================================== */
 @media (min-width: 1400px) {
   .app-shell {
-    max-width: 960px;
-    padding: 0 40px 110px;
-    margin: 40px auto;
-    min-height: calc(100vh - 80px);
+    max-width: 1440px;
+    padding: 0 100px 110px;
+    margin: 0 auto;
+    min-height: 100vh;
   }
 
   .bottom-nav {
-    max-width: 960px;
-    width: calc(100% - 80px);
+    max-width: 1200px;
+    width: calc(100% - 120px);
     padding: 16px 12px;
   }
 

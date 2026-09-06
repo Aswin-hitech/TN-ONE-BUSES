@@ -1,4 +1,4 @@
-(() => {
+document.addEventListener("DOMContentLoaded", () => {
   const savedTheme = localStorage.getItem("tn-one-theme") || "white";
   const controls = document.createElement("div");
   controls.className = "theme-controls";
@@ -7,7 +7,8 @@
     <button type="button" data-theme-choice="white">White</button>
     <button type="button" data-theme-choice="dark">Dark</button>
   `;
-  document.body.appendChild(controls);
+  const header = document.querySelector(".topbar, .map-header");
+  (header || document.body).appendChild(controls);
 
   function setTheme(theme) {
     document.documentElement.dataset.theme = theme;
@@ -23,4 +24,4 @@
   });
 
   setTheme(savedTheme === "dark" ? "dark" : "white");
-})();
+});

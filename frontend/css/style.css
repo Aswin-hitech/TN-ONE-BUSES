@@ -157,12 +157,55 @@ a {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 12px;
   padding: 18px 6px 10px;
   position: sticky;
   top: 0;
   z-index: 50;
   background: var(--color-bg);
   transition: background var(--transition-smooth);
+}
+
+.theme-controls {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  flex: 0 0 auto;
+  padding: 3px;
+  border: 1px solid var(--color-border);
+  border-radius: 999px;
+  background: var(--color-surface-solid);
+  box-shadow: 0 3px 12px var(--color-shadow);
+}
+
+.theme-controls button {
+  min-width: 52px;
+  padding: 7px 10px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--color-text-muted);
+  cursor: pointer;
+  font: 600 12px var(--font-family);
+  line-height: 1;
+}
+
+.theme-controls button.active,
+.theme-controls button:hover {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.map-header {
+  gap: 10px;
+}
+
+.map-header .theme-controls {
+  margin-left: auto;
+}
+
+.topbar > .theme-controls {
+  margin-left: auto;
 }
 
 .brand {
@@ -203,9 +246,9 @@ a {
 .btn-login {
   background: var(--color-primary);
   color: #fff;
-  padding: 10px 20px;
+  padding: 14px 28px;
   border-radius: 999px;
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 700;
   border: none;
   cursor: pointer;
@@ -226,10 +269,10 @@ a {
   background: var(--color-primary);
   color: #fff;
   border: none;
-  padding: 12px 24px;
+  padding: 16px 32px;
   border-radius: var(--radius-xl);
   font-weight: 700;
-  font-size: 15px;
+  font-size: 18px;
   cursor: pointer;
   transition: all var(--transition-smooth);
   box-shadow: 0 4px 14px rgba(11, 110, 79, 0.20);
@@ -1062,11 +1105,11 @@ a {
   width: 100%;
   border: none;
   border-radius: var(--radius-xl);
-  padding: 14px;
+  padding: 20px;
   margin-top: 10px;
   background: var(--color-primary);
   color: #fff;
-  font-size: 15px;
+  font-size: 18px;
   font-weight: 700;
   cursor: pointer;
   transition: all var(--transition-smooth);
