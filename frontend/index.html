@@ -598,8 +598,26 @@
           geocodeLocation(to)
         ]);
 
+        if (!p1 && !p2) {
+          panelDistanceBadge.textContent = "Location not found";
+          return;
+        }
+
+        // If only one coordinate was found, still pin that location on the map
         if (!p1 || !p2) {
-          panelDistanceBadge.textContent = "Route found";
+          const known = p1 || p2;
+          const knownName = p1 ? from : to;
+          const missingName = p1 ? to : from;
+          const knownLatLng = L.latLng(known[0], known[1]);
+
+          L.circleMarker(knownLatLng, {
+            radius: 8,
+            fillColor: p1 ? "#1a73e8" : "#ea4335",
+            color: "#ffffff", weight: 3, fillOpacity: 1
+          }).addTo(map).bindPopup(`<b>${escapeHtml(knownName)}</b>`);
+          map.setView(knownLatLng, 13);
+
+          panelDistanceBadge.textContent = `"${missingName}" not on map`;
           return;
         }
 
@@ -670,19 +688,86 @@
         map.fitBounds(fallbackRoute.getBounds(), { padding: [80, 80] });
       }
 
-      async function geocodeLocation(name) {
-        if (name === "Your location" && userMarker) {
-          const ll = userMarker.getLatLng();
-          return [ll.lat, ll.lng];
+      // Suffixes common in Tamil Nadu place names that Nominatim often can't resolve
+      const _TN_STRIP_SUFFIXES = [
+        "bus stand", "bus stop", "bus terminus", "bus depot",
+        "pirivu", "junction", "jn", "signal", "nagar", "colony",
+        "cross", "circle", "stand", "stop", "terminus", "depot",
+        "town", "bypass"
+      ];
+
+      function _simplifyPlaceName(name) {
+        // Progressively simplify by removing trailing known suffixes
+        const variants = [name];
+        let simplified = name.toLowerCase().trim();
+        for (const suffix of _TN_STRIP_SUFFIXES) {
+          if (simplified.endsWith(suffix)) {
+            simplified = simplified.slice(0, -suffix.length).trim().replace(/[\s,]+$/, '');
+            if (simplified.length >= 3) {
+              // Title-case it
+              variants.push(simplified.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
+            }
+            break;
+          }
         }
+        // Also try just the first meaningful word (≥4 chars)
+        const firstWord = name.trim().split(/\s+/)[0];
+        if (firstWord.length >= 4 && firstWord.toLowerCase() !== simplified) {
+          variants.push(firstWord);
+        }
+        return variants;
+      }
+
+      async function _nominatimSearch(query) {
         try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name + ", Tamil Nadu, India")}&limit=1`;
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Tamil Nadu, India")}&limit=1`;
           const res = await fetch(url, { headers: { "Accept-Language": "en" } });
           const data = await res.json();
           if (data && data.length) {
             return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
           }
         } catch (_) {}
+        return null;
+      }
+
+      async function geocodeLocation(name) {
+        if (!name || !name.trim()) return null;
+
+        // Shortcut: user's own live location
+        if (name === "Your location" && userMarker) {
+          const ll = userMarker.getLatLng();
+          return [ll.lat, ll.lng];
+        }
+
+        // Strategy 1: exact name
+        let result = await _nominatimSearch(name);
+        if (result) return result;
+
+        // Strategy 2: simplified / suffix-stripped variants
+        const variants = _simplifyPlaceName(name);
+        for (const variant of variants.slice(1)) {  // skip index 0 (same as original)
+          result = await _nominatimSearch(variant);
+          if (result) return result;
+        }
+
+        // Strategy 3: ask the backend for a known canonical stop name, then re-geocode
+        try {
+          const dbRes = await TNOne.get("/api/stops/search", { q: name });
+          const stops = dbRes && dbRes.data ? dbRes.data : [];
+          if (stops.length > 0) {
+            const canonical = stops[0].stop_name;
+            if (canonical && canonical.toLowerCase() !== name.toLowerCase()) {
+              // Try canonical name and its simplified form
+              result = await _nominatimSearch(canonical);
+              if (result) return result;
+              for (const variant of _simplifyPlaceName(canonical).slice(1)) {
+                result = await _nominatimSearch(variant);
+                if (result) return result;
+              }
+            }
+          }
+        } catch (_) {}
+
         return null;
       }
 
