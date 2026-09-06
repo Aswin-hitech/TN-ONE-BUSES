@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>THE TN ONE</title>
+
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+
+<link rel="stylesheet"
+      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+</head>
+
+<body>
+
+<div class="maps-app">
+
+  <!-- MAP -->
+  <div id="map"></div>
+
+  <!-- TOP SEARCH -->
+  <div class="map-top">
+
+    <div class="map-header">
+
+      <!-- Logo Placeholder -->
+      <div class="logo-placeholder">
+        TN
+      </div>
+
+      <div class="brand-text">
+        <div class="brand">THE TN ONE</div>
+        <div class="brand-sub">Community Bus Network</div>
+      </div>
+
+      <div id="topbar-auth"></div>
+
+    </div>
+
+    <div class="search-card">
+
+      <div class="location-row">
+
+        <div class="location-line">
+          <span class="location-dot start"></span>
+
+          <input
+            id="origin-input"
+            type="text"
+            placeholder="Your location"
+            autocomplete="off"
+          />
+        </div>
+
+        <div class="route-line"></div>
+
+        <div class="location-line">
+
+          <span class="location-dot destination"></span>
+
+          <input
+            id="to-input"
+            type="text"
+            placeholder="Where to?"
+            autocomplete="off"
+          />
+
+        </div>
+
+      </div>
+
+      <button id="search-route" class="search-button">
+        Search Buses
+      </button>
+
+    </div>
+
+  </div>
+
+
+  <!-- MAP CONTROLS -->
+
+  <div class="map-controls">
+
+    <button id="locate-btn" class="map-control">
+      ◎
+      <span>My location</span>
+    </button>
+
+  </div>
+
+
+  <!-- ROUTE ACTION SHEET -->
+
+  <div id="route-actions" class="bottom-sheet" hidden>
+
+    <div class="sheet-handle"></div>
+
+    <div class="route-summary">
+
+      <div class="route-icon">
+        🚌
+      </div>
+
+      <div>
+        <div class="sheet-title">
+          Route Selected
+        </div>
+
+        <div id="route-label" class="sheet-subtitle">
+        </div>
+      </div>
+
+    </div>
+
+    <div class="sheet-actions">
+
+      <a
+        class="sheet-button primary"
+        href="search.html"
+      >
+        🚌 View Buses
+      </a>
+
+      <a
+        class="sheet-button secondary"
+        href="report.html"
+      >
+        ＋ Add Bus
+      </a>
+
+    </div>
+
+  </div>
+
+
+  <!-- QUICK ACTIONS -->
+
+  <div class="quick-actions">
+
+    <a href="report.html" class="quick-action">
+      <span>＋</span>
+      Add Bus
+    </a>
+
+    <a href="search.html" class="quick-action">
+      <span>🚌</span>
+      View Buses
+    </a>
+
+  </div>
+
+
+  <!-- BOTTOM NAV -->
+
+  <nav class="bottom-nav">
+
+    <a class="nav-item active" href="index.html">
+      <span class="nav-icon">⌂</span>
+      <span>Home</span>
+    </a>
+
+    <a class="nav-item" href="search.html">
+      <span class="nav-icon">⌕</span>
+      <span>Search</span>
+    </a>
+
+    <a class="nav-item" href="report.html">
+      <span class="nav-icon">＋</span>
+      <span>Add Bus</span>
+    </a>
+
+    <a class="nav-item" href="profile.html">
+      <span class="nav-icon">○</span>
+      <span>Profile</span>
+    </a>
+
+  </nav>
+
+</div>
+
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/search.js"></script>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+
+<script>
+
+const map = L.map("map", {
+  zoomControl: false
+}).setView([11.1271, 78.6569], 7);
+
+
+L.tileLayer(
+  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
+  {
+    attribution: "© OpenStreetMap"
+  }
+).addTo(map);
+
+
+L.control.zoom({
+  position: "bottomright"
+}).addTo(map);
+
+
+let currentMarker = null;
+
+
+document
+  .getElementById("search-route")
+  .addEventListener("click", function () {
+
+    const origin =
+      document
+        .getElementById("origin-input")
+        .value
+        .trim();
+
+    const destination =
+      document
+        .getElementById("to-input")
+        .value
+        .trim();
+
+
+    if (!origin || !destination) {
+      alert("Enter both starting point and destination.");
+      return;
+    }
+
+
+    document
+      .getElementById("route-actions")
+      .hidden = false;
+
+
+    document
+      .getElementById("route-label")
+      .textContent =
+      origin + " → " + destination;
+
+  });
+
+
+document
+  .getElementById("locate-btn")
+  .addEventListener("click", function () {
+
+    if (!navigator.geolocation) {
+      alert("Location is not supported by your browser.");
+      return;
+    }
+
+
+    navigator.geolocation.getCurrentPosition(
+
+      function (position) {
+
+        const lat =
+          position.coords.latitude;
+
+        const lng =
+          position.coords.longitude;
+
+
+        map.setView([lat, lng], 15);
+
+
+        if (currentMarker) {
+          map.removeLayer(currentMarker);
+        }
+
+
+        currentMarker =
+          L.marker([lat, lng])
+            .addTo(map)
+            .bindPopup("You are here")
+            .openPopup();
+
+
+        document
+          .getElementById("origin-input")
+          .value = "Your location";
+
+      },
+
+      function () {
+        alert("Unable to get your location.");
+      }
+
+    );
+
+  });
+
+</script>
+
+</body>
+</html>
+

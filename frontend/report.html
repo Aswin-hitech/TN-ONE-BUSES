@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+<title>Add Bus — THE TN ONE</title>
+
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+
+
+<body>
+
+<div class="app-shell">
+
+
+  <!-- TOP BAR -->
+
+  <div class="topbar">
+
+    <div class="brand-area">
+
+      <div class="logo-placeholder">
+        TN
+      </div>
+
+      <div>
+
+        <div class="brand">
+          THE TN ONE
+        </div>
+
+        <p class="brand-sub">
+          Add a bus
+        </p>
+
+      </div>
+
+    </div>
+
+    <div id="topbar-auth"></div>
+
+  </div>
+
+
+  <!-- LOGIN -->
+
+  <div
+    id="auth-gate"
+    class="login-screen"
+    style="display:none;"
+  >
+
+    <div class="login-icon">
+      🔐
+    </div>
+
+    <h2>
+      Sign in to add a bus
+    </h2>
+
+    <p>
+      Your contribution helps other people find
+      buses faster.
+    </p>
+
+    <button
+      class="google-btn"
+      onclick="window.location.href = TNOne.API_BASE + '/api/auth/login'"
+    >
+      <span>G</span>
+      Continue with Google
+    </button>
+
+  </div>
+
+
+  <!-- FORM -->
+
+  <div
+    id="report-form-card"
+    class="form-card"
+    style="display:none;"
+  >
+
+    <div
+      id="form-alert"
+      class="alert"
+      style="display:none;"
+    ></div>
+
+
+    <div class="form-heading">
+
+      <h1>
+        Add a bus
+      </h1>
+
+      <p>
+        Share the bus information you know.
+      </p>
+
+    </div>
+
+
+    <form id="report-form">
+
+
+      <!-- BUS NAME -->
+
+      <div class="field">
+
+        <label for="bus-name-input">
+          Bus Name
+        </label>
+
+        <input
+          id="bus-name-input"
+          type="text"
+          placeholder="e.g. Mofussil Express"
+          required
+        />
+
+      </div>
+
+
+      <!-- BUS NUMBER -->
+
+      <div class="field">
+
+        <label for="bus-number-input">
+          Bus Number
+          <span class="optional">
+            Optional
+          </span>
+        </label>
+
+        <input
+          id="bus-number-input"
+          type="text"
+          placeholder="e.g. 12A"
+        />
+
+      </div>
+
+
+      <!-- BOARDING PLACE -->
+
+      <div class="field">
+
+        <label for="boarding-stop-input">
+          Boarded At
+        </label>
+
+        <input
+          id="boarding-stop-input"
+          type="text"
+          placeholder="Where did you board?"
+          autocomplete="off"
+          required
+        />
+
+      </div>
+
+
+      <!-- DESTINATION -->
+
+      <div class="field">
+
+        <label for="destination-stop-input">
+          Destination
+        </label>
+
+        <input
+          id="destination-stop-input"
+          type="text"
+          placeholder="Where is the bus going?"
+          autocomplete="off"
+          required
+        />
+
+      </div>
+
+
+      <!-- TIMINGS -->
+
+      <div class="field">
+
+        <label>
+          Bus Timings
+        </label>
+
+        <p class="field-help">
+          Add as many timings as you know.
+        </p>
+
+
+        <div id="timings-container">
+
+          <div class="timing-row">
+
+            <input
+              type="time"
+              name="bus-timing"
+              required
+            />
+
+            <button
+              type="button"
+              class="remove-time"
+              style="display:none;"
+            >
+              ×
+            </button>
+
+          </div>
+
+        </div>
+
+
+        <button
+          type="button"
+          class="add-stop-btn"
+          id="add-timing-btn"
+        >
+          ＋ Add another timing
+        </button>
+
+      </div>
+
+
+      <!-- FARE -->
+
+      <div class="field">
+
+        <label for="fare-input">
+          Bus Fare
+        </label>
+
+        <div class="fare-input">
+
+          <span>
+            ₹
+          </span>
+
+          <input
+            id="fare-input"
+            type="number"
+            min="0"
+            step="0.5"
+            placeholder="e.g. 25"
+            required
+          />
+
+        </div>
+
+      </div>
+
+
+      <!-- PHOTOS -->
+
+      <div class="field">
+
+        <label>
+          Bus Photos
+          <span class="optional">
+            Optional
+          </span>
+        </label>
+
+        <p class="field-help">
+          Add photos of the bus if you have them.
+        </p>
+
+
+        <label
+          for="bus-photos"
+          class="photo-upload"
+        >
+
+          <span class="photo-icon">
+            📷
+          </span>
+
+          <span>
+            Add photos
+          </span>
+
+          <small>
+            JPG, PNG
+          </small>
+
+        </label>
+
+
+        <input
+          id="bus-photos"
+          type="file"
+          accept="image/*"
+          multiple
+          hidden
+        />
+
+
+        <div
+          id="photo-preview"
+          class="photo-preview"
+        ></div>
+
+      </div>
+
+
+      <!-- SUBMIT -->
+
+      <button
+        type="submit"
+        class="btn-primary submit-bus-btn"
+      >
+        ADD BUS
+      </button>
+
+
+    </form>
+
+  </div>
+
+
+  <!-- BOTTOM NAV -->
+
+  <nav class="bottom-nav">
+
+    <a
+      class="nav-item"
+      href="index.html"
+    >
+      <span class="nav-icon">
+        ⌂
+      </span>
+
+      <span>
+        Home
+      </span>
+    </a>
+
+
+    <a
+      class="nav-item"
+      href="search.html"
+    >
+      <span class="nav-icon">
+        ⌕
+      </span>
+
+      <span>
+        Search
+      </span>
+    </a>
+
+
+    <a
+      class="nav-item active"
+      href="report.html"
+    >
+      <span class="nav-icon">
+        ＋
+      </span>
+
+      <span>
+        Add Bus
+      </span>
+    </a>
+
+
+    <a
+      class="nav-item"
+      href="profile.html"
+    >
+      <span class="nav-icon">
+        ○
+      </span>
+
+      <span>
+        Profile
+      </span>
+    </a>
+
+  </nav>
+
+</div>
+
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/report.js"></script>
+
+
+<script>
+
+
+/* ADD TIMINGS */
+
+const timingsContainer =
+  document.getElementById(
+    "timings-container"
+  );
+
+
+const addTimingButton =
+  document.getElementById(
+    "add-timing-btn"
+  );
+
+
+addTimingButton.addEventListener(
+  "click",
+  function () {
+
+    const row =
+      document.createElement("div");
+
+    row.className =
+      "timing-row";
+
+
+    row.innerHTML = `
+
+      <input
+        type="time"
+        name="bus-timing"
+        required
+      />
+
+      <button
+        type="button"
+        class="remove-time"
+      >
+        ×
+      </button>
+
+    `;
+
+
+    timingsContainer.appendChild(row);
+
+
+    row
+      .querySelector(".remove-time")
+      .addEventListener(
+        "click",
+        function () {
+
+          row.remove();
+
+        }
+      );
+
+  }
+);
+
+
+/* PHOTO PREVIEW */
+
+const photoInput =
+  document.getElementById(
+    "bus-photos"
+  );
+
+
+const photoPreview =
+  document.getElementById(
+    "photo-preview"
+  );
+
+
+photoInput.addEventListener(
+  "change",
+  function () {
+
+    photoPreview.innerHTML = "";
+
+
+    Array.from(
+      photoInput.files
+    ).forEach(
+      function (file) {
+
+        const reader =
+          new FileReader();
+
+
+        reader.onload =
+          function (event) {
+
+            const image =
+              document.createElement(
+                "img"
+              );
+
+
+            image.src =
+              event.target.result;
+
+
+            image.className =
+              "preview-image";
+
+
+            photoPreview.appendChild(
+              image
+            );
+
+          };
+
+
+        reader.readAsDataURL(file);
+
+      }
+    );
+
+  }
+);
+
+</script>
+
+</body>
+</html>

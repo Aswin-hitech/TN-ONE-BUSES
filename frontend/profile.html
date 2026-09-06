@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Profile — THE TN ONE</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+<div class="app-shell">
+
+  <div class="topbar">
+    <div class="brand">THE TN ONE</div>
+    <div id="topbar-auth"></div>
+  </div>
+
+  <div class="profile-header">
+    <img id="profile-avatar" src="" alt="Profile picture" />
+    <h2 id="profile-name">—</h2>
+    <p id="profile-email">—</p>
+    <button class="btn-login" id="logout-btn" style="margin-top:12px;">Sign out</button>
+  </div>
+
+  <div class="results">
+    <h2>Your report history</h2>
+    <div id="history-container"></div>
+  </div>
+
+  <div class="bottom-nav">
+    <a class="nav-item" href="index.html"><span class="nav-icon">🏠</span>Home</a>
+    <a class="nav-item" href="search.html"><span class="nav-icon">🔍</span>Search</a>
+    <a class="nav-item" href="report.html"><span class="nav-icon">➕</span>Report</a>
+    <a class="nav-item active" href="profile.html"><span class="nav-icon">👤</span>Profile</a>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/profile.js"></script>
+</body>
+</html>

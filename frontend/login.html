@@ -1,0 +1,48 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Sign in — THE TN ONE</title>
+<link rel="stylesheet" href="css/style.css" />
+<link rel="stylesheet" href="css/responsive.css" />
+</head>
+<body>
+<div class="app-shell">
+  <div class="topbar">
+    <div class="brand">THE TN ONE</div>
+  </div>
+
+  <div class="login-screen">
+    <div class="brand">🚌 THE TN ONE</div>
+    <p>Find your bus, share reliable timings, and make every trip easier.</p>
+    <button class="google-btn" id="google-signin-btn">
+      <span>🔐</span> Sign in with Google
+    </button>
+    <div class="form-card" style="width:100%;max-width:360px;margin:22px 0 0;text-align:left">
+      <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" required></div>
+      <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
+      <div id="auth-message" class="alert" hidden></div>
+      <button class="btn-primary" style="width:100%" id="password-btn">Sign in</button>
+      <button class="btn-secondary-cta" style="margin-top:10px" id="register-btn">Create account</button>
+    </div>
+    <p style="margin-top:22px;"><a href="index.html" style="text-decoration:underline;">Back to search</a></p>
+  </div>
+</div>
+
+<script src="js/api.js"></script>
+<script src="js/auth.js"></script>
+<script>
+  document.getElementById("google-signin-btn").addEventListener("click", () => {
+    window.location.href = `${TNOne.API_BASE}/api/auth/login`;
+  });
+  async function submit(path) {
+    const message = document.getElementById("auth-message"); message.hidden = false;
+    try { await TNOne.post(path, {username: username.value, password: password.value}); window.location.href="index.html"; }
+    catch (e) { message.className="alert alert-error"; message.textContent=e.message; }
+  }
+  document.getElementById("password-btn").onclick = () => submit("/api/auth/password");
+  document.getElementById("register-btn").onclick = () => submit("/api/auth/register");
+</script>
+</body>
+</html>
