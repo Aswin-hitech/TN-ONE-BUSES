@@ -40,6 +40,12 @@ def make_user(db):
 def login_as(client):
     """Log the given user into the Flask test client's session (flask-login)."""
     def _login(user):
+        try:
+            from flask import g
+            if hasattr(g, "_login_user"):
+                del g._login_user
+        except Exception:
+            pass
         with client.session_transaction() as sess:
             sess["_user_id"] = str(user.id)
             sess["_fresh"] = True

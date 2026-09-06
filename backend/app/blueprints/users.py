@@ -1,6 +1,5 @@
 from flask import Blueprint
 from flask_login import current_user
-from app.models.report import BusReport
 from app.utils.security import login_required_json
 from app.utils.responses import ok
 
@@ -16,10 +15,6 @@ def me():
 @bp.route("/me/reports")
 @login_required_json
 def my_reports():
-    reports = (
-        BusReport.query.filter_by(user_id=current_user.id)
-        .order_by(BusReport.reported_at.desc())
-        .limit(50)
-        .all()
-    )
-    return ok(data=[r.to_dict() for r in reports])
+    from app.models.bus import Bus
+    buses = Bus.query.filter_by(user_id=current_user.id).order_by(Bus.created_at.desc()).all()
+    return ok(data=[b.to_dict() for b in buses])

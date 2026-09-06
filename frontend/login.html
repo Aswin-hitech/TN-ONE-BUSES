@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -20,6 +20,10 @@
 
     <!-- AUTH CARD -->
     <div class="auth-card">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px;">
+        <span style="font-size:12px; font-weight:700; color:var(--color-text-secondary); text-transform:uppercase; letter-spacing:0.5px;">Sign In</span>
+        <div class="theme-mount"></div>
+      </div>
       <h1 id="auth-title">Welcome</h1>
       <p id="auth-subtitle" class="auth-desc">Sign in to report buses, save routes, and contribute to your local transit community.</p>
 
@@ -60,10 +64,10 @@
         </button>
       </form>
 
-      <!-- SWITCH BETWEEN SIGN IN & REGISTER -->
+      <!-- LINK TO DEDICATED REGISTRATION PAGE -->
       <div class="auth-toggle-row">
-        <span id="toggle-label">Don't have an account?</span>
-        <button id="toggle-mode-btn" class="auth-toggle-btn" type="button">Create account</button>
+        <span>Don't have an account?</span>
+        <a href="register.html" class="auth-toggle-btn" style="text-decoration:none;">Create account</a>
       </div>
     </div>
 
@@ -92,9 +96,17 @@
       const subEl = document.getElementById("auth-subtitle");
       const submitBtn = document.getElementById("submit-auth-btn");
       const toggleBtn = document.getElementById("toggle-mode-btn");
-      const toggleLabel = document.getElementById("toggle-label");
       const message = document.getElementById("auth-message");
       const form = document.getElementById("auth-form");
+
+      // Check URL parameters for OAuth errors
+      const urlParams = new URLSearchParams(window.location.search);
+      const errParam = urlParams.get("error");
+      if (errParam === "oauth_not_configured") {
+        showError("Google OAuth credentials are not configured in your .env file yet. You can sign in using Username and Password below.");
+      } else if (errParam === "oauth_failed" || errParam === "access_denied") {
+        showError("Google sign-in was blocked or cancelled. Make sure your email is added as a Test User in Google Cloud Console, or sign in below with username/password.");
+      }
 
       // Google Sign-in
       document.getElementById("google-signin-btn").addEventListener("click", () => {

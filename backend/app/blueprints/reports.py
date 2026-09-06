@@ -2,7 +2,6 @@ from flask import Blueprint, request
 from flask_login import current_user
 from pydantic import ValidationError
 from app.extensions import limiter
-from app.models.report import BusReport, ReportStatus
 from app.schemas.report import BusReportCreate
 from app.services.report_service import create_bus_report, DuplicateReportError
 from app.utils.security import login_required_json
@@ -34,14 +33,10 @@ def submit_report():
 
 @bp.route("/recent", methods=["GET"])
 def recent_reports():
+    from app.models.bus import Bus
     limit = min(int(request.args.get("limit", 20)), 50)
-    reports = (
-        BusReport.query.filter_by(status=ReportStatus.ACTIVE)
-        .order_by(BusReport.reported_at.desc())
-        .limit(limit)
-        .all()
-    )
-    return ok(data=[r.to_dict() for r in reports])
+    buses = Bus.query.order_by(Bus.created_at.desc()).limit(limit).all()
+    return ok(data=[b.to_dict() for b in buses])
 
 
 def _first_error(validation_error: ValidationError) -> str:

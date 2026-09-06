@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Light / Dark theme switcher for THE TN ONE
  */
 document.addEventListener("DOMContentLoaded", () => {
@@ -11,9 +11,21 @@ document.addEventListener("DOMContentLoaded", () => {
     <button type="button" data-theme-choice="dark">Dark</button>
   `;
 
-  // Attach to topbar-actions or topbar or floating header
-  const target = document.querySelector(".topbar-actions") || document.querySelector(".topbar") || document.body;
-  target.appendChild(controls);
+  // Attach to designated theme slot, topbar-actions, topbar, or top of register/auth card
+  const target = document.querySelector(".theme-mount") ||
+                 document.querySelector(".topbar-actions") ||
+                 document.querySelector(".topbar") ||
+                 document.querySelector(".register-card") ||
+                 document.querySelector(".auth-card");
+
+  if (target && (target.classList.contains("register-card") || target.classList.contains("auth-card"))) {
+    // If mounting directly inside an auth card without a slot, prepend so it sits at the very top
+    target.insertBefore(controls, target.firstChild);
+  } else if (target) {
+    target.appendChild(controls);
+  } else {
+    document.body.appendChild(controls);
+  }
 
   function setTheme(theme) {
     document.documentElement.dataset.theme = theme;

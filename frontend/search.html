@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -60,17 +60,18 @@
     <main>
       <div class="results-header">
         <h2>Available Buses</h2>
-        <span id="result-count" class="count-pill">Ready to search</span>
+        <span id="result-count" class="count-pill">Loading...</span>
       </div>
 
       <div id="results-container">
-        <!-- Initial / Loaded states handled by search.js -->
+        <!-- Loaded dynamically by search.js -->
         <div class="state-box">
-          <div class="state-icon">🗺️</div>
-          <p class="state-title">Where are you going?</p>
-          <p class="state-desc">Enter your starting point and destination to find community-reported buses.</p>
+          <div class="loading-spinner"></div>
+          <p class="state-title">Loading available buses...</p>
+          <p class="state-desc">Fetching schedule and community reports across Tamil Nadu.</p>
         </div>
       </div>
+
     </main>
 
     <!-- BOTTOM NAVIGATION -->
@@ -92,6 +93,54 @@
         <span>Profile</span>
       </a>
     </nav>
+  </div>
+
+  <!-- ADD STOP MODAL -->
+  <div id="add-stop-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-dialog">
+      <div class="modal-header">
+        <div>
+          <h3 id="modal-bus-title" class="modal-title">Add Stop to Bus</h3>
+          <p id="modal-bus-subtitle" class="modal-subtitle">Add a missing stop between current stops</p>
+        </div>
+        <button type="button" id="close-add-stop-modal" class="modal-close-btn" title="Close">&times;</button>
+      </div>
+
+      <form id="add-stop-form">
+        <input type="hidden" id="add-stop-bus-id" />
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="add-stop-after-select">Insert after which stop?</label>
+          <select id="add-stop-after-select" class="form-select" required>
+            <!-- Dynamically populated with stops -->
+          </select>
+          <span class="form-hint">The new stop will appear immediately after this stop in the route.</span>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 14px;">
+          <label class="form-label" for="add-stop-name-input">New Stop / Spot Name</label>
+          <input id="add-stop-name-input" type="text" class="form-input" placeholder="e.g. Town Hall, Gandhipuram" autocomplete="off" required />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 20px;">
+          <label class="form-label" for="add-stop-time-input">Passing / Halting Time (optional)</label>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <input id="add-stop-time-input" type="time" class="form-input" style="max-width: 140px;" />
+            <span id="add-stop-time-ampm" class="timing-ampm-pill">--:-- --</span>
+          </div>
+          <span class="form-hint">Will be shown in 12-hour AM/PM format across the app.</span>
+        </div>
+
+        <div id="add-stop-alert" class="alert" style="display: none; margin-bottom: 14px;"></div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancel-add-stop-btn" class="btn-text">Cancel</button>
+          <button type="submit" id="submit-add-stop-btn" class="btn-primary" style="width: auto; padding: 10px 20px;">
+            Save Stop to Route
+          </button>
+        </div>
+      </form>
+    </div>
   </div>
 
   <!-- Scripts -->

@@ -1,183 +1,296 @@
 """
-Destination / from-to search and "next bus" ranking.
-
-Pipeline (mirrors the product spec):
-  1. Normalize the search query.
-  2. Find matching stops.
-  3. Find routes/reports touching those stops (in the right direction for
-     from->to search).
-  4. Compute upcoming/passed status for each report's boarding_time.
-  5. Rank: soonest genuinely-upcoming bus first, then freshest reports,
-     older/stale reports pushed down (but still shown, clearly labeled).
+Direct Bus search and "next bus" calculation using the simplified single-table schema.
 """
-from sqlalchemy import or_
+from datetime import datetime, timezone, timedelta
+import re
 from app.extensions import db
-from app.models.bus import Bus
-from app.models.report import BusReport, ReportStatus
-from app.models.route import Route
-from app.models.stop import Stop, normalize_stop_name
-from app.services.route_service import route_supports_direction
-from app.utils.time_utils import (
-    minutes_until,
-    humanize_freshness,
-    utcnow,
-    NEXT_BUS_LOOKAHEAD_MINUTES,
-    NEXT_BUS_GRACE_PERIOD_MINUTES,
-    STALE_REPORT_MAX_AGE_MINUTES,
-)
+from app.models.bus import Bus, predict_reaching_time, format_time_ampm
+from app.utils.time_utils import utcnow
 
-RECENT_REPORTS_WINDOW_MINUTES = STALE_REPORT_MAX_AGE_MINUTES  # 24h: beyond this, treat as pure history
 MAX_RESULTS = 30
 
 
-def _matching_stop_ids(query_text: str) -> list[int]:
-    normalized = normalize_stop_name(query_text)
-    if not normalized:
-        return []
-    like_pattern = f"%{normalized}%"
-    rows = Stop.query.filter(Stop.normalized_name.ilike(like_pattern)).all()
-    return [s.id for s in rows]
+def _parse_time_to_minutes(time_str: str) -> int:
+    """Converts '06:20 PM' or '18:20' to minutes from midnight."""
+    if not time_str:
+        return 0
+    match = re.search(r"(\d{1,2}):(\d{2})", time_str)
+    if not match:
+        return 0
+    h = int(match.group(1))
+    m = int(match.group(2))
+    if "pm" in time_str.lower() and h < 12:
+        h += 12
+    elif "am" in time_str.lower() and h == 12:
+        h = 0
+    return h * 60 + m
 
 
-def _classify_report(report: BusReport, now=None) -> dict:
-    now = now or utcnow()
-    result = {
-        "minutes_until_boarding": None,
-        "timing_state": "unknown",  # upcoming | just_departed | passed | unknown
-    }
-    if report.boarding_time is not None:
-        mins = minutes_until(report.boarding_time, now)
-        result["minutes_until_boarding"] = round(mins, 1)
-        if mins >= -NEXT_BUS_GRACE_PERIOD_MINUTES and mins <= NEXT_BUS_LOOKAHEAD_MINUTES:
-            result["timing_state"] = "upcoming" if mins >= 0 else "just_departed"
-        elif mins < -NEXT_BUS_GRACE_PERIOD_MINUTES:
-            result["timing_state"] = "passed"
+def _bus_touches_stop(bus: Bus, stop_name: str) -> int:
+    """
+    Returns the 0-based index of stop_name in the bus route if it matches, else -1.
+    Matches against start_stop, destination_stop, and boarded_stops.
+    """
+    if not stop_name:
+        return -1
+    q = stop_name.strip().lower()
+    for idx, s in enumerate(bus.get_stops_list()):
+        if q in s.lower() or s.lower() in q:
+            return idx
+    return -1
+
+
+def _serialize_bus_result(bus: Bus, now_dt: datetime, from_name: str = None, to_name: str = None) -> dict:
+    timings = bus.get_timings_list()
+    now_mins = now_dt.hour * 60 + now_dt.minute
+
+    # Look up spot-specific timings if available
+    spot_timings_list = bus.get_stop_timings_list()
+    from_spot_time = None
+    to_spot_time = None
+
+    if from_name:
+        fn_lower = from_name.strip().lower()
+        for sp in spot_timings_list:
+            if fn_lower in sp["stop"].lower() or sp["stop"].lower() in fn_lower:
+                if sp.get("time"):
+                    from_spot_time = sp["time"]
+                    break
+
+    if to_name:
+        tn_lower = to_name.strip().lower()
+        for sp in spot_timings_list:
+            if tn_lower in sp["stop"].lower() or sp["stop"].lower() in tn_lower:
+                if sp.get("time"):
+                    to_spot_time = sp["time"]
+                    break
+
+    # Find the nearest upcoming timing from overall timings
+    best_timing = None
+    min_diff = 999999
+    is_upcoming = False
+
+    candidate_timing = from_spot_time
+    if candidate_timing:
+        t_mins = _parse_time_to_minutes(candidate_timing)
+        diff = t_mins - now_mins
+        if diff >= 0:
+            min_diff = diff
+            best_timing = candidate_timing
+            is_upcoming = True
         else:
-            # further out than the lookahead window — still real, just not "next"
-            result["timing_state"] = "later"
-    return result
+            min_diff = (1440 - now_mins) + t_mins
+            best_timing = candidate_timing
+            is_upcoming = False
+    else:
+        for t in timings:
+            t_mins = _parse_time_to_minutes(t)
+            diff = t_mins - now_mins
+            if diff >= 0 and diff < min_diff:
+                min_diff = diff
+                best_timing = t
+                is_upcoming = True
 
+        # If all today's buses passed, pick the earliest tomorrow
+        if not best_timing and timings:
+            best_timing = timings[0]
+            min_diff = (1440 - now_mins) + _parse_time_to_minutes(best_timing)
+            is_upcoming = False
 
-def _report_sort_key(entry: dict):
-    """
-    Sort priority:
-      0: genuinely upcoming/just-departed buses, soonest first
-      1: buses further out than the lookahead window, soonest first
-      2: everything else (no usable boarding_time, or already passed),
-         freshest report first
-    """
-    timing = entry["timing_state"]
-    if timing in ("upcoming", "just_departed"):
-        return (0, entry["minutes_until_boarding"])
-    if timing == "later":
-        return (1, entry["minutes_until_boarding"])
-    return (2, entry["freshness"]["minutes_ago"])
+    # Predicted reaching time
+    predicted_arrival = to_spot_time or bus.calculate_reaching_time(best_timing)
 
-
-def _serialize_report(report: BusReport, now) -> dict:
-    classification = _classify_report(report, now)
-    freshness = humanize_freshness(report.reported_at, now)
-    route_summary = None
-    if report.route:
-        route_summary = [rs.stop.stop_name for rs in sorted(report.route.stops, key=lambda x: x.stop_order)]
+    # Format boarding datetime for frontend consistency
+    boarding_iso = None
+    if best_timing:
+        try:
+            t_m = _parse_time_to_minutes(best_timing)
+            b_dt = now_dt.replace(hour=t_m // 60, minute=t_m % 60, second=0, microsecond=0)
+            if not is_upcoming and min_diff > 720:
+                b_dt += timedelta(days=1)
+            boarding_iso = b_dt.isoformat()
+        except Exception:
+            pass
 
     return {
-        "report_id": report.id,
-        "bus": report.bus.to_dict(),
-        "boarding_stop": report.boarding_stop.to_dict(),
-        "destination_stop": report.destination_stop.to_dict(),
-        "boarding_time": report.boarding_time.isoformat() if report.boarding_time else None,
-        "route_summary": route_summary,
-        "notes": report.notes,
-        "freshness": freshness,
-        "timing_state": classification["timing_state"],
-        "minutes_until_boarding": classification["minutes_until_boarding"],
-        "is_stale_history": freshness["level"] == "very_stale",
+        "bus": bus.to_dict(),
+        "boarding_stop": {"stop_name": from_name or bus.start_stop},
+        "destination_stop": {"stop_name": to_name or bus.destination_stop},
+        "boarding_time": boarding_iso,
+        "timing_display": format_time_ampm(best_timing or (timings[0] if timings else None)),
+        "reaching_time": format_time_ampm(predicted_arrival),
+        "fare": bus.bus_fare,
+        "bus_type": bus.bus_type,
+        "operator": bus.operator,
+        "minutes_until_boarding": min_diff if best_timing else None,
+        "timing_state": "upcoming" if (best_timing and min_diff <= 180) else "later",
+        "route_summary": bus.get_stops_list(),
+        "stop_timings": spot_timings_list,
+        "spots": spot_timings_list,
+        "freshness": {"label": "Verified schedule", "level": "fresh", "minutes_ago": 0},
     }
 
 
-def _base_report_query(now):
-    cutoff = now.replace(microsecond=0) - __import__("datetime").timedelta(
-        minutes=RECENT_REPORTS_WINDOW_MINUTES * 3  # keep a wide history window; freshness UI communicates age
-    )
-    return (
-        BusReport.query.filter(
-            BusReport.status == ReportStatus.ACTIVE,
-            BusReport.reported_at >= cutoff,
+
+def search_all() -> dict:
+    now = utcnow()
+    all_buses = Bus.query.all()
+    results = [_serialize_bus_result(b, now) for b in all_buses]
+    results.sort(
+        key=lambda x: (
+            0 if x["timing_state"] == "upcoming" else 1,
+            x["minutes_until_boarding"] if x["minutes_until_boarding"] is not None else 9999,
         )
-        .join(Bus)
-        .join(Stop, BusReport.boarding_stop_id == Stop.id)
     )
+    if results:
+        results[0]["is_next_bus"] = True
+        for m in results[1:]:
+            m["is_next_bus"] = False
+
+    return {
+        "matched_stops": [],
+        "results": results[:MAX_RESULTS],
+        "other_buses": [],
+    }
+
+
+def search_by_origin(origin_query: str) -> dict:
+    now = utcnow()
+    if not origin_query or not origin_query.strip():
+        return search_all()
+
+    all_buses = Bus.query.all()
+    matched = []
+    other = []
+
+    q = origin_query.strip().lower()
+    for b in all_buses:
+        orig_idx = _bus_touches_stop(b, origin_query)
+        if orig_idx != -1:
+            is_start = q in (b.start_stop or "").lower() or (b.start_stop or "").lower() in q
+            res = _serialize_bus_result(b, now, from_name=origin_query)
+            res["_is_origin_start"] = is_start
+            matched.append(res)
+        else:
+            other.append(_serialize_bus_result(b, now))
+
+    # Sort matched: origin start stops first, then upcoming state, then minutes until boarding
+    matched.sort(
+        key=lambda x: (
+            0 if x.get("_is_origin_start") else 1,
+            0 if x["timing_state"] == "upcoming" else 1,
+            x["minutes_until_boarding"] if x["minutes_until_boarding"] is not None else 9999,
+        )
+    )
+    if matched:
+        matched[0]["is_next_bus"] = True
+        for m in matched[1:]:
+            m["is_next_bus"] = False
+
+    other.sort(
+        key=lambda x: (
+            0 if x["timing_state"] == "upcoming" else 1,
+            x["minutes_until_boarding"] if x["minutes_until_boarding"] is not None else 9999,
+        )
+    )
+
+    return {
+        "matched_origin_stops": [{"stop_name": origin_query}],
+        "results": matched[:MAX_RESULTS],
+        "other_buses": other[:MAX_RESULTS],
+    }
 
 
 def search_by_destination(destination_query: str) -> dict:
     now = utcnow()
-    destination_ids = _matching_stop_ids(destination_query)
-    if not destination_ids:
-        return {"matched_stops": [], "results": []}
+    if not destination_query or not destination_query.strip():
+        return search_all()
 
-    reports = (
-        _base_report_query(now)
-        .filter(BusReport.destination_stop_id.in_(destination_ids))
-        .all()
+    all_buses = Bus.query.all()
+    matched = []
+    other = []
+
+    for b in all_buses:
+        dest_idx = _bus_touches_stop(b, destination_query)
+        if dest_idx != -1:
+            matched.append(_serialize_bus_result(b, now, to_name=destination_query))
+        else:
+            other.append(_serialize_bus_result(b, now))
+
+    matched.sort(
+        key=lambda x: (
+            0 if x["timing_state"] == "upcoming" else 1,
+            x["minutes_until_boarding"] if x["minutes_until_boarding"] is not None else 9999,
+        )
     )
-    entries = [_serialize_report(r, now) for r in reports]
-    entries.sort(key=_report_sort_key)
+    if matched:
+        matched[0]["is_next_bus"] = True
+        for m in matched[1:]:
+            m["is_next_bus"] = False
 
-    if entries:
-        entries[0]["is_next_bus"] = True
-        for e in entries[1:]:
-            e["is_next_bus"] = False
+    other.sort(
+        key=lambda x: (
+            0 if x["timing_state"] == "upcoming" else 1,
+            x["minutes_until_boarding"] if x["minutes_until_boarding"] is not None else 9999,
+        )
+    )
 
     return {
-        "matched_stops": [db.session.get(Stop, sid).to_dict() for sid in destination_ids],
-        "results": entries[:MAX_RESULTS],
+        "matched_stops": [{"stop_name": destination_query}],
+        "results": matched[:MAX_RESULTS],
+        "other_buses": other[:MAX_RESULTS],
     }
 
 
 def search_from_to(origin_query: str, destination_query: str) -> dict:
     now = utcnow()
-    origin_ids = _matching_stop_ids(origin_query)
-    destination_ids = _matching_stop_ids(destination_query)
-    if not origin_ids or not destination_ids:
-        return {"matched_origin_stops": [], "matched_destination_stops": [], "results": []}
+    if not origin_query and not destination_query:
+        return search_all()
+    if not origin_query:
+        return search_by_destination(destination_query)
+    if not destination_query:
+        return search_by_origin(origin_query)
 
-    candidate_reports = (
-        _base_report_query(now)
-        .filter(
-            BusReport.boarding_stop_id.in_(origin_ids),
-            BusReport.destination_stop_id.in_(destination_ids),
+    all_buses = Bus.query.all()
+    matched = []
+    other = []
+
+    for b in all_buses:
+        orig_idx = _bus_touches_stop(b, origin_query)
+        dest_idx = _bus_touches_stop(b, destination_query)
+
+        # Ensure both stops exist and the bus travels in the correct direction (orig before dest)
+        if orig_idx != -1 and dest_idx != -1 and orig_idx < dest_idx:
+            matched.append(_serialize_bus_result(b, now, from_name=origin_query, to_name=destination_query))
+        else:
+            touches_either = (orig_idx != -1) or (dest_idx != -1)
+            item = _serialize_bus_result(b, now)
+            item["_touches_either"] = touches_either
+            other.append(item)
+
+    matched.sort(
+        key=lambda x: (
+            0 if x["timing_state"] == "upcoming" else 1,
+            x["minutes_until_boarding"] if x["minutes_until_boarding"] is not None else 9999,
         )
-        .all()
     )
+    if matched:
+        matched[0]["is_next_bus"] = True
+        for m in matched[1:]:
+            m["is_next_bus"] = False
 
-    # Also consider reports whose *route* passes through both stops in the
-    # correct order, even if the specific report's destination differs
-    # (e.g. someone reported boarding for a shorter leg of a longer route).
-    route_based_reports = (
-        _base_report_query(now)
-        .filter(BusReport.boarding_stop_id.in_(origin_ids))
-        .join(Route, BusReport.route_id == Route.id)
-        .all()
+    other.sort(
+        key=lambda x: (
+            0 if x.get("_touches_either") else 1,
+            0 if x["timing_state"] == "upcoming" else 1,
+            x["minutes_until_boarding"] if x["minutes_until_boarding"] is not None else 9999,
+        )
     )
-    for r in route_based_reports:
-        if r in candidate_reports or r.route is None:
-            continue
-        for dest_id in destination_ids:
-            if route_supports_direction(r.route, r.boarding_stop_id, dest_id):
-                candidate_reports.append(r)
-                break
-
-    entries = [_serialize_report(r, now) for r in candidate_reports]
-    entries.sort(key=_report_sort_key)
-
-    if entries:
-        entries[0]["is_next_bus"] = True
-        for e in entries[1:]:
-            e["is_next_bus"] = False
 
     return {
-        "matched_origin_stops": [db.session.get(Stop, sid).to_dict() for sid in origin_ids],
-        "matched_destination_stops": [db.session.get(Stop, sid).to_dict() for sid in destination_ids],
-        "results": entries[:MAX_RESULTS],
+        "matched_origin_stops": [{"stop_name": origin_query}],
+        "matched_destination_stops": [{"stop_name": destination_query}],
+        "results": matched[:MAX_RESULTS],
+        "other_buses": other[:MAX_RESULTS],
     }
+

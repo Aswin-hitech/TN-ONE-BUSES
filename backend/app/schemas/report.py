@@ -19,8 +19,11 @@ class BusReportCreate(BaseModel):
 
     # Optional inline route definition, e.g. ["Gandhipuram", "Town Hall", "Ukkadam"]
     route_stops: Optional[List[str]] = None
+    spots: Optional[object] = None
+    stop_timings: Optional[object] = None
 
     notes: Optional[str] = None
+
 
     @field_validator("bus_name")
     @classmethod

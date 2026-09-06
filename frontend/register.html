@@ -1,0 +1,275 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Register — THE TN ONE</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+
+  <style>
+    /* Superb Premium UI Overrides for Register */
+    .register-wrapper {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 16px 48px;
+    }
+
+    .register-card {
+      width: 100%;
+      max-width: 440px;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      border-radius: var(--radius-xl);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
+      padding: 36px 32px;
+      transition: all 0.3s ease;
+    }
+
+    .register-card:hover {
+      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+    }
+
+    .register-header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .register-header h1 {
+      font-size: 26px;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      color: var(--color-text);
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+
+    .register-header p {
+      font-size: 13px;
+      color: var(--color-text-secondary);
+      font-weight: 500;
+    }
+
+    .field-group {
+      margin-bottom: 18px;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .field-group label {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--color-text);
+      margin-bottom: 8px;
+      letter-spacing: 0.2px;
+    }
+
+    .field-group input {
+      width: 100%;
+      height: 48px;
+      padding: 0 16px;
+      font-size: 15px;
+      font-weight: 500;
+      color: var(--color-text);
+      background: var(--color-surface);
+      border: 1.5px solid var(--color-border);
+      border-radius: var(--radius-md);
+      outline: none;
+      transition: all 0.2s ease;
+      box-sizing: border-box;
+    }
+
+    .field-group input:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 4px var(--color-primary-light);
+    }
+
+    .btn-register-submit {
+      width: 100%;
+      height: 50px;
+      margin-top: 10px;
+      background: var(--color-primary);
+      color: #ffffff;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: var(--radius-md);
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(11, 110, 79, 0.25);
+      transition: all 0.2s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn-register-submit:hover:not(:disabled) {
+      background: var(--color-primary-hover);
+      box-shadow: 0 6px 20px rgba(11, 110, 79, 0.35);
+      transform: translateY(-1px);
+    }
+
+    .btn-register-submit:active:not(:disabled) {
+      transform: translateY(0);
+    }
+
+    .btn-register-submit:disabled {
+      opacity: 0.65;
+      cursor: not-allowed;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="register-wrapper">
+    <div class="register-card">
+      <!-- TOP BAR WITH THEME CONTROLS AT TOP OF BOX -->
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
+        <a href="index.html" class="logo-placeholder" style="width:40px; height:40px; font-size:15px;">TN</a>
+        <div class="theme-mount"></div>
+      </div>
+
+      <!-- HEADER -->
+      <div class="register-header" style="margin-bottom: 24px;">
+        <h1>Register</h1>
+        <p>Create your account on THE TN ONE</p>
+      </div>
+
+      <!-- INLINE ALERT -->
+      <div id="register-alert" class="alert"></div>
+
+      <!-- REGISTRATION FORM (Username, Password, Name, Email, Phone Number alone - NO placeholders) -->
+      <form id="register-form" autocomplete="off">
+        <div class="field-group">
+          <label for="username">Username</label>
+          <input id="username" type="text" autocomplete="username" required />
+        </div>
+
+        <div class="field-group">
+          <label for="password">Password</label>
+          <input id="password" type="password" autocomplete="new-password" required />
+        </div>
+
+        <div class="field-group">
+          <label for="name">Name</label>
+          <input id="name" type="text" autocomplete="name" required />
+        </div>
+
+        <div class="field-group">
+          <label for="email">Email</label>
+          <input id="email" type="email" autocomplete="email" required />
+        </div>
+
+        <div class="field-group">
+          <label for="phone">Phone Number</label>
+          <input id="phone" type="tel" autocomplete="tel" required />
+        </div>
+
+        <button type="submit" id="submit-register-btn" class="btn-register-submit">
+          Register
+        </button>
+      </form>
+
+      <!-- SWITCH TO LOGIN -->
+      <div class="auth-toggle-row" style="margin-top:22px; text-align:center;">
+        <span style="color:var(--color-text-secondary); font-size:13px;">Already have an account?</span>
+        <a href="login.html" class="auth-toggle-btn" style="text-decoration:none; font-weight:700;">Sign in</a>
+      </div>
+    </div>
+
+    <!-- BACK TO MAP LINK -->
+    <div style="text-align:center; margin-top:20px;">
+      <a href="index.html" class="btn-text" style="color:var(--color-text-secondary); font-size:13px;">← Back to Map</a>
+    </div>
+  </div>
+
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/theme.js"></script>
+
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      // If already logged in, redirect to home
+      const status = await TNAuth.getStatus();
+      if (status && status.authenticated) {
+        window.location.href = "index.html";
+        return;
+      }
+
+      const form = document.getElementById("register-form");
+      const alertBox = document.getElementById("register-alert");
+      const submitBtn = document.getElementById("submit-register-btn");
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        alertBox.style.display = "none";
+
+        const username = document.getElementById("username").value.trim();
+        const password = document.getElementById("password").value;
+        const name = document.getElementById("name").value.trim();
+        const email = document.getElementById("email").value.trim();
+        const phone = document.getElementById("phone").value.trim();
+
+        // Validation
+        if (!username || username.length < 3) {
+          showAlert("Username must be at least 3 characters.");
+          document.getElementById("username").focus();
+          return;
+        }
+        if (!password || password.length < 6) {
+          showAlert("Password must be at least 6 characters.");
+          document.getElementById("password").focus();
+          return;
+        }
+        if (!name || name.length < 2) {
+          showAlert("Please enter your name.");
+          document.getElementById("name").focus();
+          return;
+        }
+        if (!email || !email.includes("@") || !email.includes(".")) {
+          showAlert("Please enter a valid email address.");
+          document.getElementById("email").focus();
+          return;
+        }
+        if (!phone || phone.length < 7) {
+          showAlert("Please enter a valid phone number.");
+          document.getElementById("phone").focus();
+          return;
+        }
+
+        submitBtn.disabled = true;
+        submitBtn.textContent = "Registering...";
+
+        try {
+          await TNOne.post("/api/auth/register", {
+            username: username,
+            password: password,
+            name: name,
+            email: email,
+            phone: phone
+          });
+
+          showAlert("Registration successful! Redirecting to map...", "success");
+          setTimeout(() => {
+            window.location.href = "index.html";
+          }, 800);
+        } catch (err) {
+          showAlert(err.message || "Registration failed. Please try again.", "error");
+          submitBtn.disabled = false;
+          submitBtn.textContent = "Register";
+        }
+      });
+
+      function showAlert(msg, type = "error") {
+        alertBox.textContent = msg;
+        alertBox.className = `alert alert-${type}`;
+        alertBox.style.display = "block";
+      }
+    });
+  </script>
+</body>
+</html>

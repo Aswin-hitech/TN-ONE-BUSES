@@ -19,9 +19,14 @@ def search():
 
     if query.origin and query.destination:
         result = search_service.search_from_to(query.origin, query.destination)
-    else:
+    elif query.origin:
+        result = search_service.search_by_origin(query.origin)
+    elif query.destination:
         result = search_service.search_by_destination(query.destination)
+    else:
+        result = search_service.search_all()
 
-    if not result["results"]:
-        return ok(data=result, message="No recent bus information found for this destination.")
+    if not result["results"] and not result.get("other_buses"):
+        return ok(data=result, message="No recent bus information found.")
     return ok(data=result)
+

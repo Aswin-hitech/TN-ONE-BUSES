@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
@@ -79,33 +79,64 @@
           </div>
         </div>
 
-        <!-- BOARDED AT -->
-        <div class="field">
-          <label for="boarding-stop-input">
-            <span>Boarded At</span>
-          </label>
-          <input id="boarding-stop-input" type="text" placeholder="e.g. Gandhipuram" autocomplete="off" required />
-        </div>
-
-        <!-- DESTINATION -->
-        <div class="field">
-          <label for="destination-stop-input">
-            <span>Destination</span>
-          </label>
-          <input id="destination-stop-input" type="text" placeholder="e.g. Ukkadam" autocomplete="off" required />
-        </div>
-
-        <!-- TIMINGS -->
+        <!-- ROUTE SPOTS & TIMINGS -->
         <div class="field">
           <label>
-            <span>Bus Timings</span>
+            <span>Route Spots &amp; Timings</span>
           </label>
-          <p class="field-help">Add the departure or passing timings you know.</p>
+          <p class="field-help">Add the starting spot, any intermediate spots, and destination spot with their respective timings.</p>
+
+          <div id="spots-container" class="spots-container">
+            <!-- Starting Spot -->
+            <div class="spot-card start-spot">
+              <div class="spot-header">
+                <span class="spot-marker-badge start">🟢 Starting Spot (Boarded At)</span>
+              </div>
+              <div class="spot-inputs-row">
+                <input id="boarding-stop-input" class="spot-name-input" type="text" placeholder="e.g. Gandhipuram" autocomplete="off" required />
+                <div class="spot-time-wrap">
+                  <input id="boarding-time-input" class="spot-time-input" type="time" required />
+                  <span id="boarding-time-ampm" class="timing-ampm-pill">--:-- --</span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Intermediate Spots Container -->
+            <div id="intermediate-spots-list" class="spots-container" style="margin-top:0;"></div>
+
+            <button type="button" id="add-spot-btn" class="btn-text" style="font-weight:700; color:var(--color-primary); display:inline-flex; align-items:center; gap:6px; margin: 4px 0 6px;">
+              <span>＋ Add Intermediate Spot with Timing</span>
+            </button>
+
+            <!-- Destination Spot -->
+            <div class="spot-card dest-spot">
+              <div class="spot-header">
+                <span class="spot-marker-badge dest">🔴 Destination Spot</span>
+              </div>
+              <div class="spot-inputs-row">
+                <input id="destination-stop-input" class="spot-name-input" type="text" placeholder="e.g. Ukkadam" autocomplete="off" required />
+                <div class="spot-time-wrap">
+                  <input id="destination-time-input" class="spot-time-input" type="time" />
+                  <span id="destination-time-ampm" class="timing-ampm-pill">--:-- --</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- ADDITIONAL TIMINGS (Optional) -->
+        <div class="field" style="margin-top: 14px;">
+          <label>
+            <span>Additional Trip Timings</span>
+            <span class="optional-tag">Optional</span>
+          </label>
+          <p class="field-help">If this bus runs multiple daily trips on this route, add the other departure times.</p>
           <div id="timings-container" class="timings-container"></div>
           <button type="button" id="add-timing-btn" class="btn-text">
-            <span>＋ Add another timing</span>
+            <span>＋ Add another trip timing</span>
           </button>
         </div>
+
 
         <!-- FARE -->
         <div class="field">

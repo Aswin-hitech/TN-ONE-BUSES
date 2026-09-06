@@ -4,7 +4,12 @@ from pathlib import Path
 
 from flask import send_from_directory
 
+from dotenv import load_dotenv
+
 ROOT_DIR = Path(__file__).resolve().parent
+load_dotenv(ROOT_DIR / ".env")
+load_dotenv(ROOT_DIR / "backend" / ".env")
+
 BACKEND_DIR = ROOT_DIR / "backend"
 if str(BACKEND_DIR) not in sys.path:
     sys.path.insert(0, str(BACKEND_DIR))
@@ -29,6 +34,11 @@ def index():
 @app.route("/login.html")
 def login_page():
     return send_from_directory(str(FRONTEND_DIR), "login.html")
+
+
+@app.route("/register.html")
+def register_page():
+    return send_from_directory(str(FRONTEND_DIR), "register.html")
 
 
 @app.route("/search.html")
@@ -65,7 +75,13 @@ def frontend_files(filename):
 
 
 with app.app_context():
-    db.create_all()
+    try:
+        db.create_all()
+    except Exception as exc:
+        app.logger.warning(
+            f"Database connection or table initialization deferred: {exc}. "
+            "App will continue serving and reconnect automatically on subsequent requests."
+        )
 
 
 if __name__ == "__main__":

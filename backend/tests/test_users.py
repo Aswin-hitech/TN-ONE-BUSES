@@ -28,3 +28,30 @@ def test_me_returns_profile_when_logged_in(client, make_user, login_as):
     resp = client.get("/api/users/me")
     assert resp.status_code == 200
     assert resp.get_json()["data"]["email"] == user.email
+
+
+def test_user_registration_and_password_login(client, db):
+    payload = {
+        "name": "Karthik Raja",
+        "username": "karthikr",
+        "email": "karthik@example.com",
+        "phone": "+919876543210",
+        "password": "securepassword123",
+    }
+    resp = client.post("/api/auth/register", json=payload)
+    assert resp.status_code == 201
+    data = resp.get_json()
+    assert data["success"] is True
+    assert data["data"]["user"]["username"] == "karthikr"
+    assert data["data"]["user"]["email"] == "karthik@example.com"
+    assert data["data"]["user"]["phone"] == "+919876543210"
+
+    # Verify duplicate username rejected
+    dup_resp = client.post("/api/auth/register", json=payload)
+    assert dup_resp.status_code == 409
+
+    # Verify login
+    login_resp = client.post("/api/auth/password", json={"username": "karthikr", "password": "securepassword123"})
+    assert login_resp.status_code == 200
+    assert login_resp.get_json()["data"]["authenticated"] is True
+

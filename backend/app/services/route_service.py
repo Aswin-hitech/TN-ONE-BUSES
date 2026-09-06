@@ -1,47 +1,47 @@
 """
-Route + route-stop creation logic, including support for optional inline
-route definitions submitted alongside a bus report.
+Route helper logic adapted for the simplified single-table Bus schema.
 """
 from app.extensions import db
-from app.models.route import Route, RouteStop
-from app.services.bus_service import find_or_create_stop
+from app.models.bus import Bus
 
 
-def create_route_with_stops(bus_id: int, route_name: str, stop_names: list[str]) -> Route:
+def create_route_with_stops(bus_id: int, route_name: str, stop_names: list[str]):
     """
-    Create a Route for `bus_id` with an ordered list of stop names.
-    Each name is resolved via find_or_create_stop so re-used stop names
-    (e.g. "Gandhipuram" appearing in many routes) map to one Stop row.
+    Updates the Bus record's start, destination, and boarded_stops directly.
     """
-    route = Route(bus_id=bus_id, route_name=route_name)
-    db.session.add(route)
-    db.session.flush()
+    bus = db.session.get(Bus, bus_id)
+    if not bus or not stop_names:
+        return bus
 
-    for order, name in enumerate(stop_names):
-        stop = find_or_create_stop(name)
-        db.session.add(RouteStop(route_id=route.id, stop_id=stop.id, stop_order=order))
+    bus.start_stop = stop_names[0]
+    if len(stop_names) > 1:
+        bus.destination_stop = stop_names[-1]
+    if len(stop_names) > 2:
+        bus.boarded_stops = ", ".join(stop_names[1:-1])
 
-    db.session.flush()
-    return route
-
-
-def find_route_containing_stop(bus_id: int, stop_id: int):
-    return (
-        Route.query.join(RouteStop)
-        .filter(Route.bus_id == bus_id, RouteStop.stop_id == stop_id)
-        .first()
-    )
+    db.session.commit()
+    return bus
 
 
-def route_supports_direction(route: Route, origin_stop_id: int, destination_stop_id: int) -> bool:
+def find_route_containing_stop(bus_id: int, stop_name: str):
+    bus = db.session.get(Bus, bus_id)
+    if not bus:
+        return None
+    for s in bus.get_stops_list():
+        if stop_name.lower() in s.lower():
+            return bus
+    return None
+
+
+def route_supports_direction(bus: Bus, origin_stop: str, destination_stop: str) -> bool:
     """
-    True only if `origin_stop_id` appears before `destination_stop_id` in the
-    route's stop ordering — i.e. the route actually travels in that direction.
+    True if origin_stop appears before destination_stop in bus.get_stops_list().
     """
-    ordered_ids = route.ordered_stop_ids()
+    stops = [s.lower() for s in bus.get_stops_list()]
     try:
-        origin_index = ordered_ids.index(origin_stop_id)
-        destination_index = ordered_ids.index(destination_stop_id)
-    except ValueError:
+        orig_idx = next(i for i, s in enumerate(stops) if origin_stop.lower() in s)
+        dest_idx = next(i for i, s in enumerate(stops) if destination_stop.lower() in s)
+        return orig_idx < dest_idx
+    except StopIteration:
         return False
-    return origin_index < destination_index
+

@@ -4,6 +4,13 @@ Never hard-code secrets here.
 """
 import os
 from datetime import timedelta
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Automatically load .env from backend/ or project root
+_base_dir = Path(__file__).resolve().parent.parent
+load_dotenv(_base_dir / ".env")
+load_dotenv(_base_dir.parent / ".env")
 
 
 def _env(name: str, default=None, required: bool = False):
@@ -23,10 +30,28 @@ class BaseConfig:
         "sqlite:///dev.db",
     )
     # Neon (and most managed Postgres) require SSL; normalize scheme for SQLAlchemy 2.x
-    if SQLALCHEMY_DATABASE_URI and SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
-        SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace(
-            "postgres://", "postgresql+psycopg2://", 1
-        )
+    if SQLALCHEMY_DATABASE_URI:
+        if SQLALCHEMY_DATABASE_URI.startswith("postgres://"):
+            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace(
+                "postgres://", "postgresql+psycopg2://", 1
+            )
+        elif SQLALCHEMY_DATABASE_URI.startswith("postgresql://") and not SQLALCHEMY_DATABASE_URI.startswith("postgresql+"):
+            SQLALCHEMY_DATABASE_URI = SQLALCHEMY_DATABASE_URI.replace(
+                "postgresql://", "postgresql+psycopg2://", 1
+            )
+
+        # Neon connection optimization: if using Neon endpoint, ensure endpoint option is set if needed
+        if "neon.tech" in SQLALCHEMY_DATABASE_URI and "options=endpoint" not in SQLALCHEMY_DATABASE_URI:
+            try:
+                from urllib.parse import urlparse
+                parsed_uri = urlparse(SQLALCHEMY_DATABASE_URI)
+                if parsed_uri.hostname:
+                    endpoint_id = parsed_uri.hostname.split(".")[0]
+                    delimiter = "&" if "?" in SQLALCHEMY_DATABASE_URI else "?"
+                    SQLALCHEMY_DATABASE_URI += f"{delimiter}options=endpoint%3D{endpoint_id}"
+            except Exception:
+                pass
+
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SQLALCHEMY_ENGINE_OPTIONS = {
         "pool_pre_ping": True,

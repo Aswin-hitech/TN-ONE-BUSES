@@ -1,78 +1,137 @@
-"""
-Bus report creation: resolves free-text bus/stop names, applies duplicate
-submission protection, and persists the report.
-"""
-from datetime import timedelta
+import json
 from app.extensions import db
-from app.models.report import BusReport, ReportStatus
-from app.models.stop import normalize_stop_name
-from app.services.bus_service import find_or_create_bus, find_or_create_stop
-from app.services.route_service import create_route_with_stops, find_route_containing_stop
-from app.utils.time_utils import utcnow
-
-DUPLICATE_WINDOW_MINUTES = 3
+from app.models.bus import Bus, BusType, predict_reaching_time, format_time_ampm
 
 
 class DuplicateReportError(Exception):
     pass
 
 
-def _is_duplicate_recent_report(user_id, bus, boarding_stop, destination_stop, boarding_time) -> bool:
+def create_bus_report(user_id: int, payload) -> Bus:
     """
-    Prevent the same user from spamming the exact same
-    bus/boarding-stop/destination/boarding-time combination within a short
-    window, without blocking legitimately repeated real-world reports
-    (e.g. reporting the same route the next day).
+    Creates or updates a single-table Bus record from user report submission.
     """
-    cutoff = utcnow() - timedelta(minutes=DUPLICATE_WINDOW_MINUTES)
-    query = BusReport.query.filter(
-        BusReport.user_id == user_id,
-        BusReport.bus_id == bus.id,
-        BusReport.boarding_stop_id == boarding_stop.id,
-        BusReport.destination_stop_id == destination_stop.id,
-        BusReport.reported_at >= cutoff,
-    )
-    if boarding_time is not None:
-        query = query.filter(BusReport.boarding_time == boarding_time)
-    return db.session.query(query.exists()).scalar()
+    bus_name = (payload.bus_name or "").strip()
+    boarding = (payload.boarding_stop or "").strip()
+    destination = (payload.destination_stop or "").strip()
 
+    # Process multiple spots with timing if provided
+    spots_data = getattr(payload, "spots", None) or getattr(payload, "stop_timings", None)
+    stop_timings_str = None
+    boarded_stops_str = None
+    reaching_time = None
+    cleaned_spots = []
 
-def create_bus_report(user_id: int, payload) -> BusReport:
-    """
-    `payload` is a validated BusReportCreate pydantic model.
-    Raises DuplicateReportError if this looks like a rapid repeat submission.
-    """
-    bus = find_or_create_bus(
-        bus_name=payload.bus_name,
+    if spots_data:
+
+        if isinstance(spots_data, str):
+            try:
+                spots_list = json.loads(spots_data)
+            except Exception:
+                spots_list = []
+        elif isinstance(spots_data, list):
+            spots_list = spots_data
+        else:
+            spots_list = []
+
+        cleaned_spots = []
+        for s in spots_list:
+            if isinstance(s, dict):
+                s_name = (s.get("stop") or s.get("stop_name") or s.get("name") or "").strip()
+                s_time = (s.get("time") or s.get("timing") or "").strip()
+                if s_name:
+                    cleaned_spots.append({"stop": s_name, "time": format_time_ampm(s_time)})
+            elif isinstance(s, str) and s.strip():
+                cleaned_spots.append({"stop": s.strip(), "time": ""})
+
+        if cleaned_spots:
+            stop_timings_str = json.dumps(cleaned_spots)
+            if not boarding and cleaned_spots:
+                boarding = cleaned_spots[0]["stop"]
+            if not destination and len(cleaned_spots) > 1:
+                destination = cleaned_spots[-1]["stop"]
+            if len(cleaned_spots) > 2:
+                boarded_stops_str = ", ".join(s["stop"] for s in cleaned_spots[1:-1])
+            if cleaned_spots[-1].get("time"):
+                reaching_time = cleaned_spots[-1]["time"]
+
+    # Extract timings string from notes or boarding_time
+    timings_str = None
+    if cleaned_spots and cleaned_spots[0].get("time"):
+        timings_str = cleaned_spots[0]["time"]
+
+    if payload.notes and "Timings:" in payload.notes:
+        try:
+            parts = payload.notes.split("Timings:")[1].strip()
+            timings_str = parts
+        except Exception:
+            pass
+
+    if not timings_str and payload.boarding_time:
+        bt = payload.boarding_time
+        timings_str = f"{bt.hour:02d}:{bt.minute:02d}"
+
+    # Extract fare from notes or default
+    fare = 25.0
+    if payload.notes and "₹" in payload.notes:
+        try:
+            part = payload.notes.split("₹")[1].split(".")[0].split()[0]
+            fare = float(part)
+        except Exception:
+            fare = 25.0
+
+    # Intermediate stops fallback
+    if not boarded_stops_str and getattr(payload, "route_stops", None):
+        boarded_stops_str = ", ".join(payload.route_stops)
+
+    # Check if an existing bus matches to merge new stops into it
+    from app.services.search_service import _bus_touches_stop
+    from app.services.bus_service import add_stop_to_bus
+
+    existing_bus = None
+    if bus_name:
+        candidates = Bus.query.filter(Bus.bus_name.ilike(bus_name)).all()
+        for cand in candidates:
+            if payload.bus_number and cand.bus_number and cand.bus_number.strip().lower() != payload.bus_number.strip().lower():
+                continue
+            if (
+                (cand.start_stop.lower() == boarding.lower() and cand.destination_stop.lower() == destination.lower())
+                or (_bus_touches_stop(cand, boarding) != -1 and _bus_touches_stop(cand, destination) != -1)
+            ):
+                existing_bus = cand
+                break
+
+    if existing_bus:
+        if cleaned_spots:
+            for s in cleaned_spots:
+                add_stop_to_bus(existing_bus, s["stop"], s.get("time"))
+        elif boarded_stops_str:
+            for st in boarded_stops_str.split(","):
+                if st.strip():
+                    add_stop_to_bus(existing_bus, st.strip())
+        elif boarding and _bus_touches_stop(existing_bus, boarding) == -1:
+            add_stop_to_bus(existing_bus, boarding, timings_str)
+
+        db.session.commit()
+        return existing_bus
+
+    bus = Bus(
+        bus_name=bus_name,
+
         bus_number=payload.bus_number,
-        operator=payload.operator,
-    )
-    boarding_stop = find_or_create_stop(payload.boarding_stop)
-    destination_stop = find_or_create_stop(payload.destination_stop)
-
-    if _is_duplicate_recent_report(user_id, bus, boarding_stop, destination_stop, payload.boarding_time):
-        raise DuplicateReportError(
-            "You already reported this bus/stop/time recently. Please wait a few minutes before reporting again."
-        )
-
-    route = None
-    if payload.route_stops and len(payload.route_stops) >= 2:
-        route = create_route_with_stops(bus.id, route_name=None, stop_names=payload.route_stops)
-    else:
-        # Try to associate with an existing route that contains the boarding stop.
-        route = find_route_containing_stop(bus.id, boarding_stop.id)
-
-    report = BusReport(
+        operator=payload.operator or "Government",
+        bus_type=getattr(payload, "bus_type", "Government") or "Government",
         user_id=user_id,
-        bus_id=bus.id,
-        route_id=route.id if route else None,
-        boarding_stop_id=boarding_stop.id,
-        destination_stop_id=destination_stop.id,
-        boarding_time=payload.boarding_time,
-        reported_at=utcnow(),
-        notes=payload.notes,
-        status=ReportStatus.ACTIVE,
+        start_stop=boarding,
+        destination_stop=destination,
+        boarded_stops=boarded_stops_str,
+        bus_timings=timings_str,
+        bus_fare=fare,
+        reaching_time=reaching_time,
+        stop_timings=stop_timings_str,
     )
-    db.session.add(report)
+    db.session.add(bus)
     db.session.commit()
-    return report
+    return bus
+
+
