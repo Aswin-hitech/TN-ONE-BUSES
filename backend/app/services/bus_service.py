@@ -71,6 +71,8 @@ def find_or_create_bus(
 
 
 
+from app.services.search_service import fuzzy_match
+
 def search_stops(query: str, limit: int = 10):
     """
     Autocomplete-style stop search across start_stop, destination_stop,
@@ -79,7 +81,6 @@ def search_stops(query: str, limit: int = 10):
     if not query or not query.strip():
         return []
 
-    q = query.strip().lower()
     buses = Bus.query.all()
     seen = set()
     results = []
@@ -88,7 +89,7 @@ def search_stops(query: str, limit: int = 10):
         for stop in b.get_stops_list():
             norm = stop.strip()
             norm_key = norm.lower()
-            if q in norm_key and norm_key not in seen:
+            if norm_key not in seen and fuzzy_match(query, norm):
                 seen.add(norm_key)
                 results.append({"stop_name": norm, "normalized_name": norm_key})
                 if len(results) >= limit:

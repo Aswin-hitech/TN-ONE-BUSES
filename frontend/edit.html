@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Edit Bus Route | TN One Bus</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/theme.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="topbar-container">
+      <a href="index.html" class="logo">TN ONE <span>BUSES</span></a>
+      <div id="topbar-auth" class="topbar-auth"></div>
+    </div>
+  </header>
+
+  <main class="page-container">
+    <div id="auth-gate" class="auth-gate" style="display:none; text-align:center; padding: 40px 20px;">
+      <div style="font-size:32px; margin-bottom:12px;">🔒</div>
+      <h2 style="font-size:20px; font-weight:800; color:var(--color-text); margin-bottom:8px;">Sign in to Edit Route</h2>
+      <p style="font-size:14px; color:var(--color-text-secondary); margin-bottom:20px;">
+        To maintain data quality, you need to sign in before you can edit community routes.
+      </p>
+      <a href="login.html" id="login-link" class="btn-primary" style="display:inline-flex; width:auto; margin:0 auto;">Sign In</a>
+    </div>
+
+    <div id="edit-form-card" class="card" style="display:none; max-width:600px; margin: 24px auto;">
+      <div class="card-header">
+        <h2 class="card-title">✏️ Edit Bus Route</h2>
+        <p class="card-subtitle">Anyone can collaboratively edit route timings and stops to keep the information accurate for everyone.</p>
+      </div>
+
+      <div class="card-body">
+        <div id="loading-state" style="text-align:center; padding:40px;">
+           <div class="loading-spinner"></div>
+           <p style="margin-top:12px; color:var(--color-text-secondary);">Loading bus details...</p>
+        </div>
+        <form id="edit-bus-form" style="display:none;">
+          <input type="hidden" id="edit-bus-id" />
+          
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="field-group">
+              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Bus Name</label>
+              <input type="text" id="edit-bus-name" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            </div>
+            <div class="field-group">
+              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Bus Number</label>
+              <input type="text" id="edit-bus-number" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="field-group">
+              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Bus Type</label>
+              <select id="edit-bus-type" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-text); box-sizing:border-box;">
+                <option value="Government">Government</option>
+                <option value="Private">Private</option>
+                <option value="Deluxe">Deluxe</option>
+                <option value="Fast">Fast</option>
+              </select>
+            </div>
+            <div class="field-group">
+              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Operator</label>
+              <input type="text" id="edit-operator" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            </div>
+          </div>
+
+          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
+            <div class="field-group">
+              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">From (Start)</label>
+              <input type="text" id="edit-start-stop" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            </div>
+            <div class="field-group">
+              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">To (Destination)</label>
+              <input type="text" id="edit-destination-stop" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            </div>
+          </div>
+
+          <div class="field-group" style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">
+              Spots with Timing (Route Sequence)
+            </label>
+            <p style="font-size:11px; color:var(--color-text-muted); margin-bottom:6px;">
+              Specify spots along the route with timing, e.g. Gandhipuram (06:00 AM), Town Hall (06:20 AM), Ukkadam (06:45 AM)
+            </p>
+            <input type="text" id="edit-stop-timings" placeholder="e.g. Gandhipuram (06:00 AM), Town Hall (06:20 AM), Ukkadam (06:45 AM)" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+          </div>
+
+          <div class="field-group" style="margin-bottom:12px;">
+            <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Boarded / Via Stops</label>
+            <input type="text" id="edit-boarded-stops" placeholder="e.g. Town Hall, Sungam, Peelamedu" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+          </div>
+
+          <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px; margin-bottom:16px;">
+            <div class="field-group">
+              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Bus Timings (AM/PM)</label>
+              <input type="text" id="edit-bus-timings" placeholder="e.g. 06:20 AM, 08:30 AM, 02:15 PM" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            </div>
+            <div class="field-group">
+              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Fare (₹)</label>
+              <input type="number" step="0.5" id="edit-bus-fare" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            </div>
+          </div>
+
+          <div id="edit-alert" class="alert" style="display:none; margin-bottom:12px;"></div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px;">
+            <button type="button" onclick="history.back()" class="btn-secondary" style="height:42px; padding:0 16px;">Cancel</button>
+            <button type="submit" id="save-edit-btn" class="btn-primary" style="height:42px; padding:0 20px;">Save Changes</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/edit.js"></script>
+</body>
+</html>

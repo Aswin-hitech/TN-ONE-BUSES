@@ -261,7 +261,19 @@ document.addEventListener("DOMContentLoaded", async () => {
       const res = await TNOne.get("/api/search", params);
       const results = res.data && res.data.results ? res.data.results : [];
       const otherBuses = res.data && res.data.other_buses ? res.data.other_buses : [];
-      renderResults(results, otherBuses, from, to);
+
+      // Check if query was auto-corrected by fuzzy matching
+      const queryCorrected = res.data && res.data.query_corrected;
+      const resolvedFrom = (res.data && res.data.resolved_from) || (res.data && res.data.matched_origin_stops && res.data.matched_origin_stops[0] && res.data.matched_origin_stops[0].stop_name);
+      const resolvedTo = (res.data && res.data.resolved_to) || (res.data && res.data.matched_destination_stops && res.data.matched_destination_stops[0] && res.data.matched_destination_stops[0].stop_name);
+
+      // Update input boxes with resolved canonical names if corrected
+      if (queryCorrected) {
+        if (res.data.resolved_from && originInput) originInput.value = res.data.resolved_from;
+        if (res.data.resolved_to && destInput) destInput.value = res.data.resolved_to;
+      }
+
+      renderResults(results, otherBuses, from, to, queryCorrected ? { resolvedFrom, resolvedTo, originalFrom: from, originalTo: to } : null);
     } catch (err) {
       resultsContainer.innerHTML = `
         <div class="state-box">
@@ -273,7 +285,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
   }
 
-  function renderResults(results, otherBuses, from, to) {
+  function renderResults(results, otherBuses, from, to, correction = null) {
     // Save into busesById lookup map
     busesById.clear();
     [...(results || []), ...(otherBuses || [])].forEach(entry => {
@@ -281,6 +293,24 @@ document.addEventListener("DOMContentLoaded", async () => {
         busesById.set(Number(entry.bus.id), entry.bus);
       }
     });
+
+    // Spell-correction notice
+    let correctionBanner = "";
+    if (correction) {
+      const parts = [];
+      if (correction.resolvedFrom && correction.originalFrom && correction.resolvedFrom.toLowerCase() !== correction.originalFrom.toLowerCase()) {
+        parts.push(`"${escapeHtml(correction.originalFrom)}" → <strong>${escapeHtml(correction.resolvedFrom)}</strong>`);
+      }
+      if (correction.resolvedTo && correction.originalTo && correction.resolvedTo.toLowerCase() !== correction.originalTo.toLowerCase()) {
+        parts.push(`"${escapeHtml(correction.originalTo)}" → <strong>${escapeHtml(correction.resolvedTo)}</strong>`);
+      }
+      if (parts.length > 0) {
+        correctionBanner = `
+          <div style="background:var(--color-primary-light); border:1px solid var(--color-primary); border-radius:var(--radius-sm); padding:8px 14px; margin-bottom:14px; font-size:13px; color:var(--color-text);">
+            🔍 Showing results for ${parts.join(" and ")}
+          </div>`;
+      }
+    }
 
     const isFiltered = Boolean(from || to);
 
@@ -313,7 +343,7 @@ document.addEventListener("DOMContentLoaded", async () => {
         : `${results.length} matching bus${results.length === 1 ? "" : "es"}`;
       resultCount.textContent = label;
 
-      let html = `<div class="bus-list">${results.map(renderBusCard).join("")}</div>`;
+      let html = correctionBanner + `<div class="bus-list">${results.map(renderBusCard).join("")}</div>`;
       resultsContainer.innerHTML = html;
     } else {
       // 0 direct matches
@@ -397,9 +427,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="spots-route-timeline">
           <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
             <span>📍 Spots &amp; Passing Timings</span>
-            <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
-              ➕ Add Stop
-            </button>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
+                ➕ Add Stop
+              </button>
+              <a href="edit.html?id=${bus.id}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
+                ✏️ Edit Details
+              </a>
+            </div>
           </div>
           <div class="spots-scroll-wrap">
             ${items}
@@ -413,9 +448,14 @@ document.addEventListener("DOMContentLoaded", async () => {
         <div class="spots-route-timeline">
           <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
             <span>📍 Route Stops</span>
-            <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
-              ➕ Add Stop
-            </button>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
+                ➕ Add Stop
+              </button>
+              <a href="edit.html?id=${bus.id}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
+                ✏️ Edit Details
+              </a>
+            </div>
           </div>
           <div class="spots-scroll-wrap">
             <span class="spot-item-badge start">
@@ -520,24 +560,45 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       debounceTimer = setTimeout(async () => {
         try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ", Tamil Nadu, India")}&limit=5`;
-          const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-          const data = await res.json();
-          if (!data || !data.length) {
+          // Fetch Nominatim and DB simultaneously
+          const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ", Tamil Nadu, India")}&limit=4`;
+          const [nomRes, dbRes] = await Promise.all([
+            fetch(nomUrl, { headers: { "Accept-Language": "en" } }).catch(() => null),
+            TNOne.get("/api/stops/search", { q }).catch(() => null)
+          ]);
+          
+          const nomData = nomRes && nomRes.ok ? await nomRes.json() : [];
+          const dbData = dbRes && dbRes.data ? dbRes.data : [];
+          
+          if (!nomData.length && !dbData.length) {
             list.classList.remove("active");
             return;
           }
-          list.innerHTML = data
-            .map((s) => {
+          
+          let html = "";
+          
+          if (dbData.length > 0) {
+            html += `<div style="font-size:10px; font-weight:800; text-transform:uppercase; color:var(--color-text-secondary); padding: 6px 12px 2px; background:var(--color-background);">Known Bus Stops</div>`;
+            html += dbData.slice(0, 5).map(s => `
+              <div class="autocomplete-item" data-name="${escapeHtml(s.stop_name)}">
+                <div style="font-weight: 600;">🚌 ${escapeHtml(s.stop_name)}</div>
+              </div>`).join("");
+          }
+          
+          if (nomData.length > 0) {
+            html += `<div style="font-size:10px; font-weight:800; text-transform:uppercase; color:var(--color-text-secondary); padding: 6px 12px 2px; background:var(--color-background);">Map Places</div>`;
+            html += nomData.map((s) => {
               const nameParts = s.display_name.split(", ");
               const shortName = nameParts[0];
               const subText = nameParts.slice(1, 3).join(", ");
               return `<div class="autocomplete-item" data-name="${escapeHtml(shortName)}">
-                <div style="font-weight: 600;">${escapeHtml(shortName)}</div>
+                <div style="font-weight: 600;">📍 ${escapeHtml(shortName)}</div>
                 <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;">${escapeHtml(subText)}</div>
               </div>`;
-            })
-            .join("");
+            }).join("");
+          }
+          
+          list.innerHTML = html;
           list.classList.add("active");
         } catch (_) {
           list.classList.remove("active");
@@ -545,16 +606,16 @@ document.addEventListener("DOMContentLoaded", async () => {
       }, 300);
     });
 
-    list.addEventListener("click", (e) => {
-      const item = e.target.closest(".autocomplete-item");
-      if (!item) return;
-      inputEl.value = item.dataset.name;
-      list.classList.remove("active");
-    });
+      list.addEventListener("click", (e) => {
+        const item = e.target.closest(".autocomplete-item");
+        if (!item) return;
+        inputEl.value = item.dataset.name;
+        list.classList.remove("active");
+      });
 
-    document.addEventListener("click", (e) => {
-      if (!wrap.contains(e.target)) list.classList.remove("active");
-    });
+      document.addEventListener("click", (e) => {
+        if (!wrap.contains(e.target)) list.classList.remove("active");
+      });
   }
 
   function escapeHtml(str) {

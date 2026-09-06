@@ -37,9 +37,26 @@ def _init_extensions(app):
 
     cors.init_app(
         app,
-        resources={r"/api/*": {"origins": app.config.get("FRONTEND_ORIGIN", "*")}},
+        resources={r"/api/*": {"origins": app.config.get("FRONTEND_ORIGIN") or "http://localhost:8080"}},
         supports_credentials=True,
     )
+
+    # Security headers on every response
+    @app.after_request
+    def set_security_headers(response):
+        response.headers["X-Content-Type-Options"] = "nosniff"
+        response.headers["X-Frame-Options"] = "DENY"
+        response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+        # Allow Nominatim + OSM in CSP (needed by frontend maps)
+        response.headers["Content-Security-Policy"] = (
+            "default-src 'self'; "
+            "script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; "
+            "style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com; "
+            "img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.openstreetmap.org https://static.vecteezy.com; "
+            "connect-src 'self' https://nominatim.openstreetmap.org https://routing.openstreetmap.de https://*.neon.tech; "
+            "font-src 'self' https://fonts.gstatic.com;"
+        )
+        return response
 
     if not app.config.get("TESTING"):
         from app.services.auth_service import init_oauth

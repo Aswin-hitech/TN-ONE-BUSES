@@ -62,17 +62,58 @@ def _partial_ratio(s1: str, s2: str) -> float:
 def fuzzy_match(query: str, target: str) -> bool:
     if not query or not target:
         return False
-        
+
+    # Require minimum meaningful length to avoid false positives on abbreviations
+    q_stripped = query.strip()
+    if len(q_stripped) < 3:
+        return q_stripped.lower() == target.strip().lower()
+
     q_norm = _normalize_place_name(query)
     t_norm = _normalize_place_name(target)
-    
+
+    if not q_norm or not t_norm:
+        return False
+
     if q_norm in t_norm or t_norm in q_norm:
         return True
-        
+
     if _partial_ratio(q_norm, t_norm) >= 0.80:
         return True
-        
+
     return False
+
+
+def resolve_stop_name(query: str, all_buses: list) -> str:
+    """
+    Given a user's (possibly misspelled) query, find the best-matching canonical
+    stop name from the database. Returns the original query if no close match found.
+    This allows the UI to display the corrected stop name even when the user typed
+    a variant spelling.
+    """
+    if not query or not query.strip():
+        return query
+
+    best_stop = None
+    best_score = 0.0
+    q_norm = _normalize_place_name(query)
+
+    for bus in all_buses:
+        for stop in bus.get_stops_list():
+            t_norm = _normalize_place_name(stop)
+            if not t_norm:
+                continue
+            # Exact / substring hit → return immediately (highest confidence)
+            if q_norm == t_norm or q_norm in t_norm or t_norm in q_norm:
+                return stop
+            score = _partial_ratio(q_norm, t_norm)
+            if score > best_score:
+                best_score = score
+                best_stop = stop
+
+    if best_stop and best_score >= 0.80:
+        return best_stop
+    return query
+
 
 def _bus_touches_stop(bus: Bus, stop_name: str) -> int:
     """
@@ -205,20 +246,24 @@ def search_by_origin(origin_query: str) -> dict:
         return search_all()
 
     all_buses = Bus.query.all()
+
+    # Resolve the user's (possibly misspelled) query to the canonical stop name in DB
+    resolved_origin = resolve_stop_name(origin_query, all_buses)
+    was_corrected = resolved_origin.lower() != origin_query.strip().lower()
+
     matched = []
     other = []
 
     for b in all_buses:
-        orig_idx = _bus_touches_stop(b, origin_query)
+        orig_idx = _bus_touches_stop(b, resolved_origin)
         if orig_idx != -1:
-            is_start = fuzzy_match(origin_query, b.start_stop or "")
-            res = _serialize_bus_result(b, now, from_name=origin_query)
+            is_start = fuzzy_match(resolved_origin, b.start_stop or "")
+            res = _serialize_bus_result(b, now, from_name=resolved_origin)
             res["_is_origin_start"] = is_start
             matched.append(res)
         else:
             other.append(_serialize_bus_result(b, now))
 
-    # Sort matched: origin start stops first, then upcoming state, then minutes until boarding
     matched.sort(
         key=lambda x: (
             0 if x.get("_is_origin_start") else 1,
@@ -239,7 +284,9 @@ def search_by_origin(origin_query: str) -> dict:
     )
 
     return {
-        "matched_origin_stops": [{"stop_name": origin_query}],
+        "matched_origin_stops": [{"stop_name": resolved_origin}],
+        "query_corrected": was_corrected,
+        "original_query": origin_query if was_corrected else None,
         "results": matched[:MAX_RESULTS],
         "other_buses": other[:MAX_RESULTS],
     }
@@ -251,13 +298,16 @@ def search_by_destination(destination_query: str) -> dict:
         return search_all()
 
     all_buses = Bus.query.all()
+    resolved_dest = resolve_stop_name(destination_query, all_buses)
+    was_corrected = resolved_dest.lower() != destination_query.strip().lower()
+
     matched = []
     other = []
 
     for b in all_buses:
-        dest_idx = _bus_touches_stop(b, destination_query)
+        dest_idx = _bus_touches_stop(b, resolved_dest)
         if dest_idx != -1:
-            matched.append(_serialize_bus_result(b, now, to_name=destination_query))
+            matched.append(_serialize_bus_result(b, now, to_name=resolved_dest))
         else:
             other.append(_serialize_bus_result(b, now))
 
@@ -280,7 +330,9 @@ def search_by_destination(destination_query: str) -> dict:
     )
 
     return {
-        "matched_stops": [{"stop_name": destination_query}],
+        "matched_stops": [{"stop_name": resolved_dest}],
+        "query_corrected": was_corrected,
+        "original_query": destination_query if was_corrected else None,
         "results": matched[:MAX_RESULTS],
         "other_buses": other[:MAX_RESULTS],
     }
@@ -296,16 +348,23 @@ def search_from_to(origin_query: str, destination_query: str) -> dict:
         return search_by_origin(origin_query)
 
     all_buses = Bus.query.all()
+
+    # Resolve user's misspellings to canonical DB stop names
+    resolved_origin = resolve_stop_name(origin_query, all_buses)
+    resolved_dest = resolve_stop_name(destination_query, all_buses)
+    origin_corrected = resolved_origin.lower() != origin_query.strip().lower()
+    dest_corrected = resolved_dest.lower() != destination_query.strip().lower()
+
     matched = []
     other = []
 
     for b in all_buses:
-        orig_idx = _bus_touches_stop(b, origin_query)
-        dest_idx = _bus_touches_stop(b, destination_query)
+        orig_idx = _bus_touches_stop(b, resolved_origin)
+        dest_idx = _bus_touches_stop(b, resolved_dest)
 
         # Ensure both stops exist and the bus travels in the correct direction (orig before dest)
         if orig_idx != -1 and dest_idx != -1 and orig_idx < dest_idx:
-            matched.append(_serialize_bus_result(b, now, from_name=origin_query, to_name=destination_query))
+            matched.append(_serialize_bus_result(b, now, from_name=resolved_origin, to_name=resolved_dest))
         else:
             touches_either = (orig_idx != -1) or (dest_idx != -1)
             item = _serialize_bus_result(b, now)
@@ -332,8 +391,11 @@ def search_from_to(origin_query: str, destination_query: str) -> dict:
     )
 
     return {
-        "matched_origin_stops": [{"stop_name": origin_query}],
-        "matched_destination_stops": [{"stop_name": destination_query}],
+        "matched_origin_stops": [{"stop_name": resolved_origin}],
+        "matched_destination_stops": [{"stop_name": resolved_dest}],
+        "query_corrected": origin_corrected or dest_corrected,
+        "resolved_from": resolved_origin if origin_corrected else None,
+        "resolved_to": resolved_dest if dest_corrected else None,
         "results": matched[:MAX_RESULTS],
         "other_buses": other[:MAX_RESULTS],
     }

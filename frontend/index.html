@@ -497,9 +497,14 @@
               <div class="spots-route-timeline" style="margin: 6px 0 2px;">
                 <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
                   <span>📍 Spots &amp; Passing Timings</span>
-                  <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
-                    ➕ Add Stop
-                  </button>
+                  <div style="display:flex; gap:6px;">
+                    <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
+                      ➕ Add Stop
+                    </button>
+                    <a href="edit.html?id=${bus.id}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
+                      ✏️ Edit
+                    </a>
+                  </div>
                 </div>
                 <div class="spots-scroll-wrap">${items}</div>
               </div>`;
@@ -508,9 +513,14 @@
               <div class="spots-route-timeline" style="margin: 6px 0 2px;">
                 <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
                   <span>📍 Route Stops</span>
-                  <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
-                    ➕ Add Stop
-                  </button>
+                  <div style="display:flex; gap:6px;">
+                    <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
+                      ➕ Add Stop
+                    </button>
+                    <a href="edit.html?id=${bus.id}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
+                      ✏️ Edit
+                    </a>
+                  </div>
                 </div>
               </div>`;
           }
@@ -736,27 +746,45 @@
           }
           debounceTimer = setTimeout(async () => {
             try {
-              // Nominatim OpenStreetMap Search
-              const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ", Tamil Nadu, India")}&limit=5`;
-              const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-              const data = await res.json();
+              // Fetch Nominatim and DB simultaneously
+              const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ", Tamil Nadu, India")}&limit=4`;
+              const [nomRes, dbRes] = await Promise.all([
+                fetch(nomUrl, { headers: { "Accept-Language": "en" } }).catch(() => null),
+                TNOne.get("/api/stops/search", { q }).catch(() => null)
+              ]);
               
-              if (!data || !data.length) {
+              const nomData = nomRes && nomRes.ok ? await nomRes.json() : [];
+              const dbData = dbRes && dbRes.data ? dbRes.data : [];
+              
+              if (!nomData.length && !dbData.length) {
                 list.classList.remove("active");
                 return;
               }
               
-              list.innerHTML = data
-                .map((s) => {
+              let html = "";
+              
+              if (dbData.length > 0) {
+                html += `<div style="font-size:10px; font-weight:800; text-transform:uppercase; color:var(--color-text-secondary); padding: 6px 12px 2px; background:var(--color-background);">Known Bus Stops</div>`;
+                html += dbData.slice(0, 5).map(s => `
+                  <div class="autocomplete-item" data-name="${escapeHtml(s.stop_name)}">
+                    <div style="font-weight: 600;">🚌 ${escapeHtml(s.stop_name)}</div>
+                  </div>`).join("");
+              }
+              
+              if (nomData.length > 0) {
+                html += `<div style="font-size:10px; font-weight:800; text-transform:uppercase; color:var(--color-text-secondary); padding: 6px 12px 2px; background:var(--color-background);">Map Places</div>`;
+                html += nomData.map((s) => {
                   const nameParts = s.display_name.split(", ");
                   const shortName = nameParts[0];
                   const subText = nameParts.slice(1, 3).join(", ");
                   return `<div class="autocomplete-item" data-name="${escapeHtml(shortName)}">
-                    <div style="font-weight: 600;">${escapeHtml(shortName)}</div>
+                    <div style="font-weight: 600;">📍 ${escapeHtml(shortName)}</div>
                     <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;">${escapeHtml(subText)}</div>
                   </div>`;
-                })
-                .join("");
+                }).join("");
+              }
+              
+              list.innerHTML = html;
               list.classList.add("active");
             } catch (_) {
               list.classList.remove("active");

@@ -104,26 +104,29 @@ def update_bus(bus_id):
     if not bus:
         return fail("Bus not found.", 404)
 
-    # Ownership check: A user can edit ONLY the bus details they added
-    if bus.user_id != current_user.id:
-        return fail("You can only edit bus details that you added.", 403)
-
     data = request.get_json(silent=True) or {}
 
+    def _str(val, max_len=255):
+        """Safely cast to stripped string with a max length cap."""
+        return str(val).strip()[:max_len] if val is not None else None
+
     if "bus_name" in data:
-        name = str(data["bus_name"]).strip()
+        name = _str(data["bus_name"], 255)
         if not name:
             return fail("Bus name cannot be empty.", 422)
         bus.bus_name = name
 
     if "bus_number" in data:
-        bus.bus_number = str(data["bus_number"]).strip() if data["bus_number"] else None
+        bus.bus_number = _str(data["bus_number"], 64)
 
     if "operator" in data:
-        bus.operator = str(data["operator"]).strip() if data["operator"] else None
+        bus.operator = _str(data["operator"], 255)
 
     if "bus_type" in data:
-        bus.bus_type = str(data["bus_type"]).strip() or bus.bus_type
+        allowed_types = {"Government", "Private", "Deluxe", "Fast"}
+        new_type = _str(data["bus_type"], 64)
+        if new_type in allowed_types:
+            bus.bus_type = new_type
 
     if "spots" in data or "stop_timings" in data:
         import json
