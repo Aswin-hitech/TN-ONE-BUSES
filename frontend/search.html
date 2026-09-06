@@ -1,338 +1,103 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
-
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
-<title>Find Buses — THE TN ONE</title>
-
-<link rel="stylesheet" href="css/style.css" />
-<link rel="stylesheet" href="css/responsive.css" />
-<link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Search Buses — THE TN ONE</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
 </head>
 
-
 <body>
-
-<script src="js/theme.js"></script>
-
-<div class="app-shell search-page">
-
-
-  <!-- TOP BAR -->
-
-  <div class="topbar">
-
-    <div class="brand-area">
-
-      <div class="logo-placeholder">
-        TN
-      </div>
-
-      <div>
-        <div class="brand">
-          THE TN ONE
+  <div class="app-shell">
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="brand-area">
+        <a href="index.html" class="logo-placeholder" title="Home">TN</a>
+        <div class="brand-text-block">
+          <a href="index.html" class="brand-title">THE TN ONE</a>
+          <span class="brand-tagline">Community-Powered Bus Network</span>
         </div>
-
-        <p class="brand-sub">
-          Find your bus
-        </p>
       </div>
+      <div class="topbar-actions">
+        <div id="topbar-auth"></div>
+      </div>
+    </header>
 
-    </div>
-
-    <div id="topbar-auth"></div>
-
-  </div>
-
-
-  <!-- SEARCH -->
-
-  <div class="search-header">
-
-    <h1>
-      Find a bus
-    </h1>
-
-    <div class="search-card">
-
+    <!-- FLOATING SEARCH CARD -->
+    <section class="search-card" style="margin-bottom: 16px;">
       <div class="location-row">
-
+        <div class="route-connector-line"></div>
+        
         <div class="location-line">
-
           <span class="location-dot start"></span>
-
-          <input
-            id="origin-input"
-            type="text"
-            placeholder="From"
-            autocomplete="off"
-          />
-
+          <input id="origin-input" type="text" placeholder="From / Boarding stop" autocomplete="off" />
         </div>
 
-
-        <div class="route-line"></div>
-
+        <div class="location-divider"></div>
 
         <div class="location-line">
-
           <span class="location-dot destination"></span>
-
-          <input
-            id="destination-input"
-            type="text"
-            placeholder="Where to?"
-            autocomplete="off"
-          />
-
+          <input id="destination-input" type="text" placeholder="Where to? (Destination)" autocomplete="off" />
         </div>
-
       </div>
 
-
-      <button
-        id="search-button"
-        class="search-button"
-      >
+      <button id="search-button" class="search-button">
         🔍 Search Buses
       </button>
+    </section>
 
+    <!-- SEARCH SUMMARY (Google Maps breadcrumb style) -->
+    <div id="search-summary" style="display:none; align-items:center; justify-content:space-between; background:var(--color-surface); border:1px solid var(--color-border); border-radius:var(--radius-md); padding:10px 14px; margin-bottom:16px; box-shadow:var(--shadow-sm);">
+      <div style="font-weight:700; font-size:14px; color:var(--color-text);">
+        📍 <span id="summary-route-text">Route</span>
+      </div>
+      <button id="edit-search" class="btn-text" style="padding:0;">Edit</button>
     </div>
 
-  </div>
-
-
-  <!-- SEARCH SUMMARY -->
-
-  <div
-    id="search-summary"
-    class="search-summary"
-    hidden
-  >
-
-    <div>
-
-      <span id="summary-origin">
-        From
-      </span>
-
-      <span class="arrow">
-        →
-      </span>
-
-      <strong id="summary-destination">
-        Destination
-      </strong>
-
-    </div>
-
-    <button id="edit-search">
-      Edit
-    </button>
-
-  </div>
-
-
-  <!-- RESULTS -->
-
-  <main class="results-section">
-
-    <div class="results-heading">
-
-      <div>
-        <h2>
-          Available buses
-        </h2>
-
-        <p id="result-count">
-          Search to find buses
-        </p>
+    <!-- RESULTS SECTION -->
+    <main>
+      <div class="results-header">
+        <h2>Available Buses</h2>
+        <span id="result-count" class="count-pill">Ready to search</span>
       </div>
 
-      <a
-        href="report.html"
-        class="add-bus-small"
-      >
-        ＋ Add Bus
-      </a>
-
-    </div>
-
-
-    <div
-      class="results"
-      id="results-container"
-    >
-
-      <!-- Empty state -->
-
-      <div class="empty-state">
-
-        <div class="empty-icon">
-
+      <div id="results-container">
+        <!-- Initial / Loaded states handled by search.js -->
+        <div class="state-box">
+          <div class="state-icon">🗺️</div>
+          <p class="state-title">Where are you going?</p>
+          <p class="state-desc">Enter your starting point and destination to find community-reported buses.</p>
         </div>
-
-        <h3>
-          Find your next bus
-        </h3>
-
-        <p>
-          Enter your starting point and destination to see buses reported by the community.
-        </p>
-
       </div>
+    </main>
 
-    </div>
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+      <a class="nav-item" href="index.html">
+        <span class="nav-icon">⌂</span>
+        <span>Home</span>
+      </a>
+      <a class="nav-item active" href="search.html">
+        <span class="nav-icon">⌕</span>
+        <span>Search</span>
+      </a>
+      <a class="nav-item" href="report.html">
+        <span class="nav-icon">＋</span>
+        <span>Add Bus</span>
+      </a>
+      <a class="nav-item" href="profile.html">
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+      </a>
+    </nav>
+  </div>
 
-  </main>
-
-
-  <!-- BOTTOM NAV -->
-
-  <nav class="bottom-nav">
-
-    <a
-      class="nav-item"
-      href="index.html"
-    >
-      <span class="nav-icon">
-        ⌂
-      </span>
-
-      <span>
-        Home
-      </span>
-    </a>
-
-
-    <a
-      class="nav-item active"
-      href="search.html"
-    >
-      <span class="nav-icon">
-        ⌕
-      </span>
-
-      <span>
-        Search
-      </span>
-    </a>
-
-
-    <a
-      class="nav-item"
-      href="report.html"
-    >
-      <span class="nav-icon">
-        ＋
-      </span>
-
-      <span>
-        Add Bus
-      </span>
-    </a>
-
-
-    <a
-      class="nav-item"
-      href="profile.html"
-    >
-      <span class="nav-icon">
-        ○
-      </span>
-
-      <span>
-        Profile
-      </span>
-    </a>
-
-  </nav>
-
-</div>
-
-
-<script src="js/api.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/search.js"></script>
-
-
-<script>
-
-const searchButton =
-  document.getElementById("search-button");
-
-
-searchButton.addEventListener(
-  "click",
-  function () {
-
-    const origin =
-      document
-        .getElementById("origin-input")
-        .value
-        .trim();
-
-
-    const destination =
-      document
-        .getElementById("destination-input")
-        .value
-        .trim();
-
-
-    if (!origin || !destination) {
-
-      alert(
-        "Please enter both starting point and destination."
-      );
-
-      return;
-    }
-
-
-    document
-      .getElementById("search-summary")
-      .hidden = false;
-
-
-    document
-      .getElementById("summary-origin")
-      .textContent = origin;
-
-
-    document
-      .getElementById("summary-destination")
-      .textContent = destination;
-
-
-    document
-      .getElementById("result-count")
-      .textContent =
-      "Searching community reports...";
-
-  });
-
-
-document
-  .getElementById("edit-search")
-  .addEventListener(
-    "click",
-    function () {
-
-      document
-        .getElementById("search-summary")
-        .hidden = true;
-
-      document
-        .getElementById("origin-input")
-        .focus();
-
-    }
-  );
-
-</script>
-
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="js/search.js"></script>
 </body>
 </html>

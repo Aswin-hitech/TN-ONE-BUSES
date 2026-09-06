@@ -1,332 +1,395 @@
-<!DOCTYPE html>
+﻿<!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>THE TN ONE — Community-Powered Bus Network</title>
+  <link rel="stylesheet" href="css/style.css" />
+  <link rel="stylesheet" href="css/responsive.css" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
 
-<title>THE TN ONE</title>
-
-<link rel="stylesheet" href="css/style.css" />
-<link rel="stylesheet" href="css/responsive.css" />
-<link rel="icon" href="favicon.ico" type="image/x-icon" />
-
-<link rel="stylesheet"
-      href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 </head>
 
 <body>
+  <div class="map-screen">
+    <!-- FULL VIEWPORT MAP -->
+    <div id="map"></div>
 
-<script src="js/theme.js"></script>
-
-<div class="maps-app">
-
-  <!-- MAP -->
-  <div id="map"></div>
-
-  <!-- TOP SEARCH -->
-  <div class="map-top">
-
-    <div class="map-header">
-
-      <!-- Logo Placeholder -->
-      <div class="logo-placeholder">
-        <img src="./assets/buslogo.jpg" alt="THE TN ONE logo" />
+    <!-- FLOATING BRAND & SEARCH CONTAINER -->
+    <div class="map-floating-top">
+      <div class="map-floating-header">
+        <div class="brand-area">
+          <div class="logo-placeholder">TN</div>
+          <div class="brand-text-block">
+            <span class="brand-title">THE TN ONE</span>
+            <span class="brand-tagline">Community-Powered Bus Network</span>
+          </div>
+        </div>
+        <div class="topbar-actions">
+          <div id="topbar-auth"></div>
+        </div>
       </div>
 
-      <div class="brand-text">
-        <div class="brand">THE TN ONE</div>
-        <div class="brand-sub">Community Bus Network</div>
+      <!-- SOURCE-DESTINATION BOX -->
+      <div class="search-card">
+        <div class="location-row">
+          <div class="route-connector-line"></div>
+          
+          <div class="location-line">
+            <span class="location-dot start"></span>
+            <input id="origin-input" type="text" placeholder="From / Your location" autocomplete="off" />
+          </div>
+
+          <div class="location-divider"></div>
+
+          <div class="location-line">
+            <span class="location-dot destination"></span>
+            <input id="destination-input" type="text" placeholder="Where to?" autocomplete="off" />
+          </div>
+        </div>
+
+        <button id="search-route-btn" class="search-button">
+          🔍 Search Buses
+        </button>
       </div>
 
-      <div id="topbar-auth"></div>
+      <!-- ROUTE SELECTED DIVISION (Right below the source-destination box) -->
+      <div id="route-actions" class="route-selected-card" style="display:none;">
+        <div class="route-selected-header">
+          <span class="route-selected-icon">🚌</span>
+          <div class="route-selected-text">
+            <span class="route-selected-badge">Route Selected</span>
+            <span id="route-label" class="route-selected-title">—</span>
+          </div>
+        </div>
 
+        <div class="route-selected-buttons">
+          <button id="view-buses-btn" class="btn-primary" style="padding:10px 14px; font-size:14px;">
+            🚌 View Buses
+          </button>
+          <button id="add-bus-btn" class="btn-secondary" style="padding:10px 14px; font-size:14px;">
+            ＋ Add Bus
+          </button>
+        </div>
+      </div>
     </div>
 
-    <div class="search-card">
-
-      <div class="location-row">
-
-        <div class="location-line">
-          <span class="location-dot start"></span>
-
-          <input
-            id="origin-input"
-            type="text"
-            placeholder="Your location"
-            autocomplete="off"
-          />
-        </div>
-
-        <div class="route-line"></div>
-
-        <div class="location-line">
-
-          <span class="location-dot destination"></span>
-
-          <input
-            id="to-input"
-            type="text"
-            placeholder="Where to?"
-            autocomplete="off"
-          />
-
-        </div>
-
-      </div>
-
-      <button id="search-route" class="search-button">
-        Search Buses
+    <!-- FLOATING ACTIONS OVER MAP -->
+    <div class="map-floating-actions">
+      <button id="locate-btn" class="fab-btn" title="Use my current location">
+        <span>📍</span>
+        <span>My Location</span>
       </button>
 
-    </div>
-
-  </div>
-
-
-  <!-- ROUTE ACTION SHEET -->
-
-  <div id="route-actions" class="bottom-sheet" hidden>
-
-    <div class="sheet-handle"></div>
-
-    <div class="route-summary">
-
-      <div class="route-icon">
-        🚌
-      </div>
-
-      <div>
-        <div class="sheet-title">
-          Route Selected
-        </div>
-
-        <div id="route-label" class="sheet-subtitle">
-        </div>
-      </div>
-    </div>
-
-    <div class="sheet-actions">
-
-      <a
-        class="sheet-button primary"
-        href="search.html"
-      >
-        🚌 View Buses
+      <a href="report.html" class="fab-btn primary" title="Add a Bus">
+        <span>＋</span>
+        <span>Add Bus</span>
       </a>
-
-      <a
-        class="sheet-button secondary"
-        href="report.html"
-      >
-        ＋ Add Bus
-      </a>
-
     </div>
 
+    <!-- BOTTOM NAVIGATION -->
+    <nav class="bottom-nav">
+      <a class="nav-item active" href="index.html">
+        <span class="nav-icon">⌂</span>
+        <span>Home</span>
+      </a>
+      <a class="nav-item" href="search.html">
+        <span class="nav-icon">⌕</span>
+        <span>Search</span>
+      </a>
+      <a class="nav-item" href="report.html">
+        <span class="nav-icon">＋</span>
+        <span>Add Bus</span>
+      </a>
+      <a class="nav-item" href="profile.html">
+        <span class="nav-icon">👤</span>
+        <span>Profile</span>
+      </a>
+    </nav>
   </div>
 
+  <!-- Scripts -->
+  <script src="js/api.js"></script>
+  <script src="js/auth.js"></script>
+  <script src="js/theme.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
-  <!-- QUICK ACTIONS -->
+  <script>
+    document.addEventListener("DOMContentLoaded", async () => {
+      // 1. Initialize Auth
+      const authContainer = document.getElementById("topbar-auth");
+      const status = await TNAuth.getStatus();
+      TNAuth.renderTopbarAuth(authContainer, status);
 
-  <div class="quick-actions">
-  <!-- MAP CONTROLS -->
+      // 2. Initialize Map (Center of Tamil Nadu)
+      const map = L.map("map", {
+        zoomControl: false
+      }).setView([11.1271, 78.6569], 7);
 
-  <div class="map-controls">
-
-    <button id="locate-btn" class="map-control">
-      ◎
-      <span>My location</span>
-    </button>
-
-  </div>
-    <a href="report.html" class="quick-action">
-      <span>＋</span>
-      Add Bus
-    </a>
-
-    <a href="search.html" class="quick-action">
-      <span>- </span>
-      View Buses
-    </a>
-
-  </div>
-
-
-  <!-- BOTTOM NAV -->
-
-  <nav class="bottom-nav">
-
-    <a class="nav-item active" href="index.html">
-      <span class="nav-icon">⌂</span>
-      <span>Home</span>
-    </a>
-
-    <a class="nav-item" href="search.html">
-      <span class="nav-icon">⌕</span>
-      <span>Search</span>
-    </a>
-
-    <a class="nav-item" href="report.html">
-      <span class="nav-icon"><img src="https://i.pinimg.com/736x/6c/ee/ad/6ceead9542816e38e8e9a67947da6b52.jpg" alt="Add bus" /></span>
-      <span>Add Bus</span>
-    </a>
-
-    <a class="nav-item" href="profile.html">
-      <span class="nav-icon"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThJWIh4nypYwlaQ_qlJhGAm_wGQnhPFQmfKXxji24YeQ&s=10"></span>
-      <span>Profile</span>
-    </a>
-
-  </nav>
-
-</div>
-
-
-<script src="js/api.js"></script>
-<script src="js/auth.js"></script>
-<script src="js/search.js"></script>
-
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-
-
-<script>
-
-const map = L.map("map", {
-  zoomControl: false
-}).setView([11.1271, 78.6569], 7);
-
-
-L.tileLayer(
-  "https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png",
-  {
-    attribution: "© OpenStreetMap"
-  }
-).addTo(map);
-
-
-L.control.zoom({
-  position: "bottomright"
-}).addTo(map);
-
-
-let currentMarker = null;
-
-
-  document
-    .getElementById("search-route")
-    .addEventListener("click", async function () {
-
-      const origin = document.getElementById("origin-input").value.trim();
-      const destination = document.getElementById("to-input").value.trim();
-
-      if (!origin || !destination) {
-        alert("Enter both starting point and destination.");
-        return;
-      }
-
-      const searchBtn = document.getElementById("search-route");
-      const origText = searchBtn.textContent;
-      searchBtn.textContent = "Routing...";
-      searchBtn.disabled = true;
-
-      const geocoder = L.Control.Geocoder.nominatim();
-      const geocode = (query) => new Promise(resolve => {
-        if (query === "Your location" && currentMarker) {
-          resolve(currentMarker.getLatLng());
-          return;
-        }
-        geocoder.geocode(query, (results) => {
-          resolve(results.length > 0 ? results[0].center : null);
-        });
-      });
-
-      const p1 = await geocode(origin);
-      const p2 = await geocode(destination);
-
-      searchBtn.textContent = origText;
-      searchBtn.disabled = false;
-
-      if (!p1 || !p2) {
-        alert("Could not find one of the locations on the map.");
-        return;
-      }
-
-      if (window.routingControl) {
-        map.removeControl(window.routingControl);
-      }
-
-      window.routingControl = L.Routing.control({
-        waypoints: [p1, p2],
-        routeWhileDragging: false,
-        addWaypoints: false,
-        show: false,
-        createMarker: function(i, wp) {
-          return L.marker(wp.latLng).bindPopup(i === 0 ? origin : destination);
-        },
-        lineOptions: {
-          styles: [{color: '#4285F4', opacity: 0.9, weight: 6}]
-        }
+      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19
       }).addTo(map);
 
-      document.getElementById("route-actions").hidden = false;
-      document.getElementById("route-label").textContent = origin + " → " + destination;
-    });
+      L.control.zoom({ position: "bottomleft" }).addTo(map);
 
+      let userMarker = null;
+      let routingControl = null;
+      let fallbackRoute = null;
+      let originMarker = null;
+      let destMarker = null;
 
-document
-  .getElementById("locate-btn")
-  .addEventListener("click", function () {
+      const originInput = document.getElementById("origin-input");
+      const destInput = document.getElementById("destination-input");
+      const searchBtn = document.getElementById("search-route-btn");
+      const locateBtn = document.getElementById("locate-btn");
+      const routeCard = document.getElementById("route-actions");
+      const routeLabel = document.getElementById("route-label");
+      const viewBusesBtn = document.getElementById("view-buses-btn");
+      const addBusBtn = document.getElementById("add-bus-btn");
 
-    if (!navigator.geolocation) {
-      alert("Location is not supported by your browser.");
-      return;
-    }
+      // Setup Stop Autocomplete for Origin & Destination
+      setupAutocomplete(originInput, () => {
+        if (destInput.value.trim()) triggerRouteSelection();
+      });
+      setupAutocomplete(destInput, () => {
+        if (originInput.value.trim()) triggerRouteSelection();
+      });
 
-
-    navigator.geolocation.getCurrentPosition(
-
-      function (position) {
-
-        const lat =
-          position.coords.latitude;
-
-        const lng =
-          position.coords.longitude;
-
-
-        map.setView([lat, lng], 15);
-
-
-        if (currentMarker) {
-          map.removeLayer(currentMarker);
+      // Handle Search Button Click
+      searchBtn.addEventListener("click", () => {
+        const from = originInput.value.trim();
+        const to = destInput.value.trim();
+        if (!from && !to) {
+          alert("Please enter a starting point or destination.");
+          originInput.focus();
+          return;
         }
+        if (from && to) {
+          triggerRouteSelection();
+        } else {
+          navigateToSearch(from, to);
+        }
+      });
 
+      function triggerRouteSelection() {
+        const from = originInput.value.trim() || "Your location";
+        const to = destInput.value.trim();
+        if (!to) return;
 
-        currentMarker =
-          L.marker([lat, lng])
-            .addTo(map)
-            .bindPopup("You are here")
-            .openPopup();
+        routeLabel.textContent = `${from} → ${to}`;
+        routeCard.style.display = "block";
 
+        // Persist selection
+        sessionStorage.setItem("tn_one_from", from);
+        sessionStorage.setItem("tn_one_to", to);
 
-        document
-          .getElementById("origin-input")
-          .value = "Your location";
-
-      },
-
-      function () {
-        alert("Unable to get your location.");
+        // Draw Route on Map
+        calculateAndDrawRoute(from, to);
       }
 
-    );
+      viewBusesBtn.addEventListener("click", () => {
+        const from = originInput.value.trim();
+        const to = destInput.value.trim();
+        navigateToSearch(from, to);
+      });
 
-  });
+      addBusBtn.addEventListener("click", () => {
+        const from = originInput.value.trim();
+        const to = destInput.value.trim();
+        const params = new URLSearchParams();
+        if (from && from !== "Your location") params.set("from", from);
+        if (to) params.set("to", to);
+        window.location.href = `report.html?${params.toString()}`;
+      });
 
-</script>
+      function navigateToSearch(from, to) {
+        const params = new URLSearchParams();
+        if (from && from !== "Your location") params.set("from", from);
+        if (to) params.set("to", to);
+        window.location.href = `search.html?${params.toString()}`;
+      }
 
+      // Geolocation Locate Button
+      locateBtn.addEventListener("click", () => {
+        if (!navigator.geolocation) {
+          alert("Geolocation is not supported by your browser.");
+          return;
+        }
+        locateBtn.style.opacity = "0.7";
+        navigator.geolocation.getCurrentPosition(
+          (pos) => {
+            locateBtn.style.opacity = "1";
+            const lat = pos.coords.latitude;
+            const lng = pos.coords.longitude;
+            map.setView([lat, lng], 14);
+
+            if (userMarker) map.removeLayer(userMarker);
+            userMarker = L.circleMarker([lat, lng], {
+              radius: 8,
+              fillColor: "#1a73e8",
+              color: "#ffffff",
+              weight: 2,
+              fillOpacity: 1
+            }).addTo(map).bindPopup("Your current location").openPopup();
+
+            originInput.value = "Your location";
+            if (destInput.value.trim()) triggerRouteSelection();
+          },
+          () => {
+            locateBtn.style.opacity = "1";
+            alert("Could not retrieve your location. Please check location permissions.");
+          },
+          { enableHighAccuracy: true, timeout: 8000 }
+        );
+      });
+
+      // Stop Autocomplete
+      function setupAutocomplete(inputEl, onSelect) {
+        if (!inputEl) return;
+        const wrap = document.createElement("div");
+        wrap.className = "autocomplete-wrap";
+        inputEl.parentNode.insertBefore(wrap, inputEl);
+        wrap.appendChild(inputEl);
+
+        const list = document.createElement("div");
+        list.className = "autocomplete-list";
+        wrap.appendChild(list);
+
+        let debounceTimer = null;
+        inputEl.addEventListener("input", () => {
+          clearTimeout(debounceTimer);
+          const q = inputEl.value.trim();
+          if (q.length < 2) {
+            list.classList.remove("active");
+            list.innerHTML = "";
+            return;
+          }
+          debounceTimer = setTimeout(async () => {
+            try {
+              const res = await TNOne.get("/api/stops/search", { q });
+              const stops = res.data || [];
+              if (!stops.length) {
+                list.classList.remove("active");
+                return;
+              }
+              list.innerHTML = stops
+                .map((s) => `<div class="autocomplete-item" data-name="${escapeHtml(s.stop_name)}">${escapeHtml(s.stop_name)}</div>`)
+                .join("");
+              list.classList.add("active");
+            } catch (_) {
+              list.classList.remove("active");
+            }
+          }, 200);
+        });
+
+        list.addEventListener("click", (e) => {
+          const item = e.target.closest(".autocomplete-item");
+          if (!item) return;
+          inputEl.value = item.dataset.name;
+          list.classList.remove("active");
+          if (onSelect) onSelect(item.dataset.name);
+        });
+
+        document.addEventListener("click", (e) => {
+          if (!wrap.contains(e.target)) list.classList.remove("active");
+        });
+      }
+
+      // Route Calculation & Fallback Polyline
+      async function calculateAndDrawRoute(from, to) {
+        if (routingControl) {
+          map.removeControl(routingControl);
+          routingControl = null;
+        }
+        if (fallbackRoute) {
+          map.removeLayer(fallbackRoute);
+          fallbackRoute = null;
+        }
+        if (originMarker) {
+          map.removeLayer(originMarker);
+          originMarker = null;
+        }
+        if (destMarker) {
+          map.removeLayer(destMarker);
+          destMarker = null;
+        }
+
+        const [p1, p2] = await Promise.all([
+          geocodeLocation(from),
+          geocodeLocation(to)
+        ]);
+
+        if (!p1 || !p2) return;
+
+        const latLng1 = L.latLng(p1[0], p1[1]);
+        const latLng2 = L.latLng(p2[0], p2[1]);
+
+        try {
+          routingControl = L.Routing.control({
+            waypoints: [latLng1, latLng2],
+            routeWhileDragging: false,
+            addWaypoints: false,
+            show: false,
+            createMarker: function(i, wp) {
+              return L.marker(wp.latLng).bindPopup(i === 0 ? `From: ${from}` : `To: ${to}`);
+            },
+            lineOptions: {
+              styles: [{ color: '#1a73e8', opacity: 0.9, weight: 6 }]
+            }
+          })
+          .on('routingerror', () => {
+            drawFallback(latLng1, latLng2, from, to);
+          })
+          .addTo(map);
+        } catch (_) {
+          drawFallback(latLng1, latLng2, from, to);
+        }
+      }
+
+      function drawFallback(latLng1, latLng2, from, to) {
+        if (routingControl) {
+          try { map.removeControl(routingControl); } catch(_) {}
+          routingControl = null;
+        }
+        fallbackRoute = L.polyline([latLng1, latLng2], {
+          color: '#1a73e8',
+          weight: 6,
+          opacity: 0.85,
+          dashArray: '8, 6'
+        }).addTo(map);
+
+        originMarker = L.marker(latLng1).addTo(map).bindPopup(`From: ${from}`);
+        destMarker = L.marker(latLng2).addTo(map).bindPopup(`To: ${to}`);
+        map.fitBounds(fallbackRoute.getBounds(), { padding: [60, 60] });
+      }
+
+      async function geocodeLocation(name) {
+        if (name === "Your location" && userMarker) {
+          const ll = userMarker.getLatLng();
+          return [ll.lat, ll.lng];
+        }
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name + ", Tamil Nadu, India")}&limit=1`;
+          const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+          const data = await res.json();
+          if (data && data.length) {
+            return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+          }
+        } catch (_) {}
+        return null;
+      }
+
+      function escapeHtml(str) {
+        if (!str) return "";
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      }
+    });
+  </script>
 </body>
 </html>
-

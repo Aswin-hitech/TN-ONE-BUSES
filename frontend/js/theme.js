@@ -1,14 +1,19 @@
+﻿/**
+ * Light / Dark theme switcher for THE TN ONE
+ */
 document.addEventListener("DOMContentLoaded", () => {
-  const savedTheme = localStorage.getItem("tn-one-theme") || "white";
+  const savedTheme = localStorage.getItem("tn-one-theme") || "light";
   const controls = document.createElement("div");
   controls.className = "theme-controls";
-  controls.setAttribute("aria-label", "Theme");
+  controls.setAttribute("aria-label", "Theme Selector");
   controls.innerHTML = `
-    <button type="button" data-theme-choice="white">White</button>
+    <button type="button" data-theme-choice="light">Light</button>
     <button type="button" data-theme-choice="dark">Dark</button>
   `;
-  const header = document.querySelector(".topbar, .map-header");
-  (header || document.body).appendChild(controls);
+
+  // Attach to topbar-actions or topbar or floating header
+  const target = document.querySelector(".topbar-actions") || document.querySelector(".topbar") || document.body;
+  target.appendChild(controls);
 
   function setTheme(theme) {
     document.documentElement.dataset.theme = theme;
@@ -23,5 +28,5 @@ document.addEventListener("DOMContentLoaded", () => {
     if (button) setTheme(button.dataset.themeChoice);
   });
 
-  setTheme(savedTheme === "dark" ? "dark" : "white");
+  setTheme(savedTheme === "dark" ? "dark" : "light");
 });

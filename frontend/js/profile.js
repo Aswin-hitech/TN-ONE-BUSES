@@ -1,50 +1,125 @@
-/**
- * Profile page logic: shows the signed-in user's info and their report history.
+﻿/**
+ * Profile page logic: displays signed-in user stats, avatar,
+ * and contribution history from /api/users/me/reports.
  */
 document.addEventListener("DOMContentLoaded", async () => {
   const topbarAuth = document.getElementById("topbar-auth");
   const status = await TNAuth.getStatus();
   TNAuth.renderTopbarAuth(topbarAuth, status);
 
-  if (!status.authenticated) {
+  if (!status || !status.authenticated || !status.user) {
     window.location.href = "login.html";
     return;
   }
 
   const user = status.user;
-  document.getElementById("profile-avatar").src =
-    user.profile_picture || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQHzgIvj_tKuzbc5yaALqcWzplgTmsGHD2t4CW7WwYDVw&s=10";
-  document.getElementById("profile-name").textContent = user.name;
-  document.getElementById("profile-email").textContent = user.email;
+  const avatarWrapper = document.getElementById("profile-avatar-container");
+  const nameEl = document.getElementById("profile-name");
+  const emailEl = document.getElementById("profile-email");
+  const logoutBtn = document.getElementById("logout-btn");
+  const historyContainer = document.getElementById("history-container");
+  const reportCountEl = document.getElementById("report-count");
+  const photoCountEl = document.getElementById("photo-count");
+  const contribCountEl = document.getElementById("contrib-count");
 
-  document.getElementById("logout-btn").addEventListener("click", async () => {
-    await TNOne.post("/api/auth/logout");
+  // Populate user info
+  nameEl.textContent = user.name || user.username || "Community Commuter";
+  emailEl.textContent = user.email || `${user.username}@local.tnone`;
+
+  // Render Avatar (clean placeholder if no photo or broken URL)
+  if (user.profile_picture) {
+    const img = document.createElement("img");
+    img.src = user.profile_picture;
+    img.className = "profile-avatar-large";
+    img.alt = user.name || "User";
+    img.onerror = () => {
+      img.replaceWith(createLargePlaceholder(user.name || user.username));
+    };
+    avatarWrapper.innerHTML = "";
+    avatarWrapper.appendChild(img);
+  } else {
+    avatarWrapper.innerHTML = "";
+    avatarWrapper.appendChild(createLargePlaceholder(user.name || user.username));
+  }
+
+  function createLargePlaceholder(name) {
+    const div = document.createElement("div");
+    div.className = "profile-avatar-large";
+    div.textContent = name ? name.trim().charAt(0).toUpperCase() : "👤";
+    return div;
+  }
+
+  // Logout handler
+  logoutBtn.addEventListener("click", async () => {
+    logoutBtn.disabled = true;
+    logoutBtn.textContent = "Signing out...";
+    try {
+      await TNOne.post("/api/auth/logout");
+    } catch (_) {}
     window.location.href = "index.html";
   });
 
-  const historyContainer = document.getElementById("history-container");
+  // Fetch user reports & contributions
   try {
     const res = await TNOne.get("/api/users/me/reports");
-    const reports = res.data || [];
+    const reports = (res.data || []);
+    
+    // Update stats
+    reportCountEl.textContent = reports.length;
+    let photoCount = 0;
+    reports.forEach(r => {
+      if (r.bus && r.bus.photos) photoCount += r.bus.photos.length;
+    });
+    photoCountEl.textContent = photoCount;
+    contribCountEl.textContent = reports.length;
+
     if (!reports.length) {
-      historyContainer.innerHTML = `<p class="empty-state">You haven't reported any buses yet.</p>`;
+      historyContainer.innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">🚌</div>
+          <h3 class="state-title">No contributions yet</h3>
+          <p class="state-desc">Add your first bus and help commuters discover accurate schedules across Tamil Nadu.</p>
+          <a href="report.html" class="btn-primary" style="display:inline-flex; width:auto;">＋ Add a Bus</a>
+        </div>`;
       return;
     }
-    historyContainer.innerHTML = reports.map((r) => `
-      <div class="bus-card">
-        <p class="bus-title">${escapeHtml(r.bus.bus_name)}${r.bus.bus_number ? " " + escapeHtml(r.bus.bus_number) : ""}</p>
-        <div class="route-line">
-          ${escapeHtml(r.boarding_stop.stop_name)} <span class="arrow">\u2192</span> ${escapeHtml(r.destination_stop.stop_name)}
-        </div>
-        <div class="bus-sub">Reported ${new Date(r.reported_at).toLocaleString()}</div>
-      </div>
-    `).join("");
+
+    const cardsHtml = reports.map((r) => {
+      const bus = r.bus || {};
+      const title = escapeHtml(bus.bus_name || "Bus");
+      const busNum = bus.bus_number ? `<span class="bus-number-badge">${escapeHtml(bus.bus_number)}</span>` : "";
+      const from = r.boarding_stop ? escapeHtml(r.boarding_stop.stop_name) : "Origin";
+      const to = r.destination_stop ? escapeHtml(r.destination_stop.stop_name) : "Destination";
+      const dateStr = new Date(r.reported_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" });
+      const notes = r.notes ? `<div style="font-size:12px; color:var(--color-text-secondary); margin-top:6px;">${escapeHtml(r.notes)}</div>` : "";
+
+      return `
+        <div class="bus-card">
+          <div class="bus-card-top">
+            <div class="bus-identity">
+              <div class="bus-name-row">
+                <span class="bus-name">🚌 ${title}</span>
+                ${busNum}
+              </div>
+            </div>
+            <div style="font-size:12px; color:var(--color-text-secondary);">${dateStr}</div>
+          </div>
+          <div class="bus-route-path">${from} <span class="arrow">→</span> ${to}</div>
+          ${notes}
+        </div>`;
+    }).join("");
+
+    historyContainer.innerHTML = `<div class="bus-list">${cardsHtml}</div>`;
   } catch (err) {
-    historyContainer.innerHTML = `<p class="empty-state">${escapeHtml(err.message)}</p>`;
+    historyContainer.innerHTML = `
+      <div class="state-box">
+        <p class="state-title">Unable to load contributions</p>
+        <p class="state-desc">${escapeHtml(err.message || "Please check back later.")}</p>
+      </div>`;
   }
 
   function escapeHtml(str) {
-    if (str === null || str === undefined) return "";
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 });

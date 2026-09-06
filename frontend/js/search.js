@@ -1,111 +1,214 @@
-/**
- * Home / search page logic: destination + from-to search, stop autocomplete,
- * and rendering of bus result cards with freshness + "next bus" indicators.
+﻿/**
+ * Search page logic: reads query parameters, triggers search,
+ * supports stop autocomplete, and renders rich bus cards.
  */
 document.addEventListener("DOMContentLoaded", async () => {
   const topbarAuth = document.getElementById("topbar-auth");
   TNAuth.renderTopbarAuth(topbarAuth, await TNAuth.getStatus());
 
-  const modeToggle = document.getElementById("mode-toggle");
-  const singleField = document.getElementById("single-search-field");
-  const fromToFields = document.getElementById("from-to-fields");
-  const destinationInput = document.getElementById("destination-input");
   const originInput = document.getElementById("origin-input");
-  const toInput = document.getElementById("to-input");
-  const searchForm = document.getElementById("search-form");
+  const destInput = document.getElementById("destination-input");
+  const searchBtn = document.getElementById("search-button");
   const resultsContainer = document.getElementById("results-container");
+  const resultCount = document.getElementById("result-count");
+  const searchSummary = document.getElementById("search-summary");
+  const summaryRoute = document.getElementById("summary-route-text");
+  const editSearchBtn = document.getElementById("edit-search");
 
-  let fromToMode = false;
-  if (modeToggle) {
-    modeToggle.addEventListener("click", () => {
-      fromToMode = !fromToMode;
-      fromToFields.classList.toggle("active", fromToMode);
-      singleField.style.display = fromToMode ? "none" : "flex";
-      modeToggle.textContent = fromToMode
-        ? "Switch to destination-only search"
-        : "Know your starting point too? Search From \u2192 To";
-    });
-  }
-
-  setupAutocomplete(destinationInput);
+  // Setup stop autocomplete
   setupAutocomplete(originInput);
-  setupAutocomplete(toInput);
+  setupAutocomplete(destInput);
 
-  if (searchForm) {
-    searchForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      resultsContainer.innerHTML = `<p class="empty-state">Searching for buses\u2026</p>`;
+  // Read URL parameters if coming from Home or another page
+  const urlParams = new URLSearchParams(window.location.search);
+  const fromParam = urlParams.get("from") || sessionStorage.getItem("tn_one_from") || "";
+  const toParam = urlParams.get("to") || urlParams.get("destination") || sessionStorage.getItem("tn_one_to") || "";
 
-      try {
-        let res;
-        if (fromToMode && originInput.value.trim() && toInput.value.trim()) {
-          res = await TNOne.get("/api/search", { from: originInput.value.trim(), to: toInput.value.trim() });
-        } else if (destinationInput.value.trim()) {
-          res = await TNOne.get("/api/search", { destination: destinationInput.value.trim() });
-        } else {
-          resultsContainer.innerHTML = `<p class="empty-state">Please enter a destination to search.</p>`;
-          return;
-        }
-        renderResults(res.data.results, destinationInput.value.trim() || toInput.value.trim());
-      } catch (err) {
-        resultsContainer.innerHTML = `<p class="empty-state">${escapeHtml(err.message)}</p>`;
-      }
+  if (fromParam) originInput.value = fromParam;
+  if (toParam) destInput.value = toParam;
+
+  // Auto-search if parameters are present
+  if (fromParam || toParam) {
+    performSearch(fromParam, toParam);
+  }
+
+  searchBtn.addEventListener("click", (e) => {
+    e.preventDefault();
+    const from = originInput.value.trim();
+    const to = destInput.value.trim();
+    if (!from && !to) {
+      renderInitialState();
+      return;
+    }
+    performSearch(from, to);
+  });
+
+  if (editSearchBtn) {
+    editSearchBtn.addEventListener("click", () => {
+      searchSummary.style.display = "none";
+      originInput.focus();
     });
   }
 
-  function renderResults(results, label) {
-    if (!results || results.length === 0) {
+  async function performSearch(from, to) {
+    // Show summary bar
+    if (from && to) {
+      summaryRoute.textContent = `${from} → ${to}`;
+      searchSummary.style.display = "flex";
+    } else if (to) {
+      summaryRoute.textContent = `Buses to ${to}`;
+      searchSummary.style.display = "flex";
+    }
+
+    // Update URL without reloading
+    const newParams = new URLSearchParams();
+    if (from) newParams.set("from", from);
+    if (to) newParams.set("to", to);
+    window.history.replaceState({}, "", `${window.location.pathname}?${newParams.toString()}`);
+
+    // Render loading indicator
+    resultsContainer.innerHTML = `
+      <div class="state-box">
+        <div class="loading-spinner"></div>
+        <p class="state-title">Finding community reports...</p>
+        <p class="state-desc">Searching for reported buses and timings for this route.</p>
+      </div>`;
+    resultCount.textContent = "Searching...";
+
+    try {
+      let res;
+      if (from && to) {
+        res = await TNOne.get("/api/search", { from, to });
+      } else if (to) {
+        res = await TNOne.get("/api/search", { destination: to });
+      } else {
+        res = await TNOne.get("/api/search", { from });
+      }
+
+      const results = res.data && res.data.results ? res.data.results : [];
+      renderResults(results, from, to);
+    } catch (err) {
       resultsContainer.innerHTML = `
-        <div class="empty-state">
-          <div class="big-emoji">\u{1F68C}</div>
-          <p>No recent bus information found for this destination.</p>
-          <a class="btn-primary" href="report.html">Report a bus to help others</a>
+        <div class="state-box">
+          <div class="state-icon">⚠️</div>
+          <p class="state-title">Something went wrong</p>
+          <p class="state-desc">${escapeHtml(err.message || "Please check your connection and try again.")}</p>
+        </div>`;
+      resultCount.textContent = "Error loading buses";
+    }
+  }
+
+  function renderResults(results, from, to) {
+    if (!results || results.length === 0) {
+      resultCount.textContent = "0 buses found";
+      const addBusUrl = `report.html?${from ? "from=" + encodeURIComponent(from) + "&" : ""}${to ? "to=" + encodeURIComponent(to) : ""}`;
+      resultsContainer.innerHTML = `
+        <div class="state-box">
+          <div class="state-icon">🚌</div>
+          <p class="state-title">Couldn't find a bus for this route yet</p>
+          <p class="state-desc">Be the first to add one and help travelers across Tamil Nadu.</p>
+          <a href="${addBusUrl}" class="btn-primary" style="display:inline-flex; width:auto;">
+            ＋ Add Bus for this route
+          </a>
         </div>`;
       return;
     }
 
-    const heading = `<h2>Buses to ${escapeHtml(label)}</h2>`;
-    const cards = results.map(renderCard).join("");
-    resultsContainer.innerHTML = heading + cards;
+    const count = results.length;
+    resultCount.textContent = `${count} community ${count === 1 ? "report" : "reports"}`;
+
+    const cardsHtml = results.map(renderBusCard).join("");
+    resultsContainer.innerHTML = `<div class="bus-list">${cardsHtml}</div>`;
   }
 
-  function renderCard(entry) {
-    const bus = entry.bus;
-    const title = `${escapeHtml(bus.bus_name)}${bus.bus_number ? " " + escapeHtml(bus.bus_number) : ""}`;
-    const sub = [bus.operator, bus.bus_type].filter(Boolean).map(escapeHtml).join(" \u00b7 ");
-    const boardingTime = entry.boarding_time
-      ? new Date(entry.boarding_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-      : "Not specified";
+  function renderBusCard(entry) {
+    const bus = entry.bus || {};
+    const title = escapeHtml(bus.bus_name || "Mofussil Bus");
+    const busNum = bus.bus_number ? `<span class="bus-number-badge">${escapeHtml(bus.bus_number)}</span>` : "";
+    const operator = [bus.operator, bus.bus_type].filter(Boolean).map(escapeHtml).join(" · ");
+    
+    // Boarding & Destination
+    const fromName = entry.boarding_stop ? escapeHtml(entry.boarding_stop.stop_name) : "Origin";
+    const toName = entry.destination_stop ? escapeHtml(entry.destination_stop.stop_name) : "Destination";
+    const routeLine = `${fromName} <span class="arrow">→</span> ${toName}`;
 
-    const routeLine = entry.route_summary && entry.route_summary.length
-      ? entry.route_summary.map(escapeHtml).join(' <span class="arrow">\u2192</span> ')
-      : `${escapeHtml(entry.boarding_stop.stop_name)} <span class="arrow">\u2192</span> ${escapeHtml(entry.destination_stop.stop_name)}`;
+    // Calculate / Highlight Next Bus
+    let nextBusBanner = "";
+    if (entry.is_next_bus || entry.timing_state === "upcoming" || entry.timing_state === "just_departed") {
+      const timeStr = entry.boarding_time
+        ? new Date(entry.boarding_time).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : "";
+      const mins = entry.minutes_until_boarding;
+      let countdownText = "";
+      if (mins !== null && mins !== undefined) {
+        countdownText = mins > 0 ? `in ${Math.round(mins)} min` : "Departing now";
+      }
+      nextBusBanner = `
+        <div class="next-bus-banner">
+          <span class="badge">🟢 Next reported bus ${timeStr ? "· " + timeStr : ""}</span>
+          <span class="countdown">${countdownText}</span>
+        </div>`;
+    }
 
-    const badge = entry.is_next_bus
-      ? `<div class="next-badge">\u{1F7E2} Next reported bus</div>`
-      : "";
+    // Timings list
+    let timingsHtml = "";
+    if (bus.timings && bus.timings.length > 0) {
+      const chips = bus.timings.map(t => `<span class="timing-chip">${escapeHtml(t)}</span>`).join("");
+      timingsHtml = `
+        <div class="bus-timings-wrap">
+          <div class="bus-timings-label">Known Timings</div>
+          <div class="bus-timings-list">${chips}</div>
+        </div>`;
+    }
 
-    const notes = entry.notes
-      ? `<div class="notes-line">"${escapeHtml(entry.notes)}"</div>`
-      : "";
+    // Freshness & notes
+    const freshness = entry.freshness || { label: "Recently reported", level: "fresh" };
+    const notesHtml = entry.notes ? `<div style="font-style:italic; margin-top:6px; color:var(--color-text-secondary);">"${escapeHtml(entry.notes)}"</div>` : "";
+
+    // Photos
+    let photosHtml = "";
+    if (bus.photos && bus.photos.length > 0) {
+      const thumbs = bus.photos.map(url => `<img src="${escapeHtml(url)}" class="bus-photo-thumb" alt="Bus photo" onerror="this.style.display='none'" />`).join("");
+      photosHtml = `<div class="bus-photos-row">${thumbs}</div>`;
+    }
 
     return `
-      <div class="bus-card ${entry.is_next_bus ? "next" : ""}">
-        ${badge}
-        <p class="bus-title">${title}</p>
-        <p class="bus-sub">${sub}</p>
-        <div class="route-line">${routeLine}</div>
-        <div class="card-meta">
-          <div class="meta-block">
-            <div class="label">Boarding</div>
-            <div class="value">${boardingTime}</div>
+      <div class="bus-card ${entry.is_next_bus ? "is-next-bus" : ""}">
+        <div class="bus-card-top">
+          <div class="bus-identity">
+            <div class="bus-name-row">
+              <span class="bus-name">🚌 ${title}</span>
+              ${busNum}
+            </div>
+            ${operator ? `<span class="bus-operator">${operator}</span>` : ""}
           </div>
-          <div class="freshness-pill">
-            <span class="dot ${entry.freshness.level}"></span>
-            ${escapeHtml(entry.freshness.label)}
+          <div class="bus-fare">₹${entry.fare || 25}</div>
+        </div>
+
+        <div class="bus-route-path">${routeLine}</div>
+
+        ${nextBusBanner}
+        ${timingsHtml}
+        ${photosHtml}
+        ${notesHtml}
+
+        <div class="bus-card-footer">
+          <div class="freshness-tag">
+            <span class="freshness-dot ${escapeHtml(freshness.level)}"></span>
+            <span>${escapeHtml(freshness.label)}</span>
           </div>
         </div>
-        ${notes}
+      </div>`;
+  }
+
+  function renderInitialState() {
+    resultCount.textContent = "Search to discover buses";
+    searchSummary.style.display = "none";
+    resultsContainer.innerHTML = `
+      <div class="state-box">
+        <div class="state-icon">🗺️</div>
+        <p class="state-title">Where are you going?</p>
+        <p class="state-desc">Enter your starting point and destination to find community-reported buses.</p>
       </div>`;
   }
 
@@ -115,6 +218,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     wrap.className = "autocomplete-wrap";
     inputEl.parentNode.insertBefore(wrap, inputEl);
     wrap.appendChild(inputEl);
+
     const list = document.createElement("div");
     list.className = "autocomplete-list";
     wrap.appendChild(list);
@@ -122,15 +226,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     let debounceTimer = null;
     inputEl.addEventListener("input", () => {
       clearTimeout(debounceTimer);
-      const query = inputEl.value.trim();
-      if (query.length < 2) {
+      const q = inputEl.value.trim();
+      if (q.length < 2) {
         list.classList.remove("active");
         list.innerHTML = "";
         return;
       }
       debounceTimer = setTimeout(async () => {
         try {
-          const res = await TNOne.get("/api/stops/search", { q: query });
+          const res = await TNOne.get("/api/stops/search", { q });
           const stops = res.data || [];
           if (!stops.length) {
             list.classList.remove("active");
@@ -159,12 +263,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   }
 
   function escapeHtml(str) {
-    if (str === null || str === undefined) return "";
-    return String(str)
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&#039;");
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 });
