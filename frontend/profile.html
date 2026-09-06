@@ -1,42 +1,304 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 <title>Profile — THE TN ONE</title>
+
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/responsive.css" />
 </head>
+
+
 <body>
-<div class="app-shell">
+
+<script src="js/theme.js"></script>
+
+<div class="app-shell profile-page">
+
+
+  <!-- TOP BAR -->
 
   <div class="topbar">
-    <div class="brand">THE TN ONE</div>
+
+    <div class="brand-area">
+
+      <div class="logo-placeholder">
+        TN
+      </div>
+
+      <div>
+
+        <div class="brand">
+          THE TN ONE
+        </div>
+
+        <p class="brand-sub">
+          Your profile
+        </p>
+
+      </div>
+
+    </div>
+
     <div id="topbar-auth"></div>
+
   </div>
 
-  <div class="profile-header">
-    <img id="profile-avatar" src="" alt="Profile picture" />
-    <h2 id="profile-name">—</h2>
-    <p id="profile-email">—</p>
-    <button class="btn-login" id="logout-btn" style="margin-top:12px;">Sign out</button>
-  </div>
 
-  <div class="results">
-    <h2>Your report history</h2>
-    <div id="history-container"></div>
-  </div>
+  <!-- PROFILE -->
 
-  <div class="bottom-nav">
-    <a class="nav-item" href="index.html"><span class="nav-icon">🏠</span>Home</a>
-    <a class="nav-item" href="search.html"><span class="nav-icon">🔍</span>Search</a>
-    <a class="nav-item" href="report.html"><span class="nav-icon">➕</span>Report</a>
-    <a class="nav-item active" href="profile.html"><span class="nav-icon">👤</span>Profile</a>
-  </div>
+  <section class="profile-card">
+
+    <div class="profile-avatar-wrapper">
+
+      <img
+        id="profile-avatar"
+        src=""
+        alt="Profile picture"
+        class="profile-avatar"
+      />
+
+      <div
+        id="avatar-placeholder"
+        class="avatar-placeholder"
+      >
+        👤
+      </div>
+
+    </div>
+
+
+    <h1 id="profile-name">
+      —
+    </h1>
+
+    <p id="profile-email">
+      —
+    </p>
+
+
+    <button
+      class="btn-login signout-btn"
+      id="logout-btn"
+    >
+      Sign out
+    </button>
+
+  </section>
+
+
+  <!-- CONTRIBUTIONS -->
+
+  <section class="stats-card">
+
+    <div class="stat">
+
+      <strong id="report-count">
+        0
+      </strong>
+
+      <span>
+        Buses Added
+      </span>
+
+    </div>
+
+
+    <div class="stat">
+
+      <strong id="photo-count">
+        0
+      </strong>
+
+      <span>
+        Photos
+      </span>
+
+    </div>
+
+
+    <div class="stat">
+
+      <strong id="helpful-count">
+        0
+      </strong>
+
+      <span>
+        Contributions
+      </span>
+
+    </div>
+
+  </section>
+
+
+  <!-- HISTORY -->
+
+  <main class="profile-history">
+
+    <div class="section-header">
+
+      <div>
+
+        <h2>
+          Your contributions
+        </h2>
+
+        <p>
+          Buses you have added to THE TN ONE
+        </p>
+
+      </div>
+
+      <a
+        href="report.html"
+        class="add-bus-small"
+      >
+        ＋ Add Bus
+      </a>
+
+    </div>
+
+
+    <div id="history-container">
+
+      <div class="history-empty">
+
+        <div class="empty-icon">
+          🚌
+        </div>
+
+        <h3>
+          No contributions yet
+        </h3>
+
+        <p>
+          Add your first bus and help someone
+          find their way.
+        </p>
+
+        <a
+          href="report.html"
+          class="btn-primary"
+        >
+          Add a Bus
+        </a>
+
+      </div>
+
+    </div>
+
+  </main>
+
+
+  <!-- BOTTOM NAV -->
+
+  <nav class="bottom-nav">
+
+    <a
+      class="nav-item"
+      href="index.html"
+    >
+      <span class="nav-icon">
+        ⌂
+      </span>
+
+      <span>
+        Home
+      </span>
+    </a>
+
+
+    <a
+      class="nav-item"
+      href="search.html"
+    >
+      <span class="nav-icon">
+        ⌕
+      </span>
+
+      <span>
+        Search
+      </span>
+    </a>
+
+
+    <a
+      class="nav-item"
+      href="report.html"
+    >
+      <span class="nav-icon">
+        ＋
+      </span>
+
+      <span>
+        Add Bus
+      </span>
+    </a>
+
+
+    <a
+      class="nav-item active"
+      href="profile.html"
+    >
+      <span class="nav-icon">
+        ○
+      </span>
+
+      <span>
+        Profile
+      </span>
+    </a>
+
+  </nav>
+
 </div>
+
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
 <script src="js/profile.js"></script>
+
+
+<script>
+
+/* AVATAR FALLBACK */
+
+const avatar =
+  document.getElementById(
+    "profile-avatar"
+  );
+
+const placeholder =
+  document.getElementById(
+    "avatar-placeholder"
+  );
+
+
+avatar.addEventListener(
+  "error",
+  function () {
+
+    avatar.style.display = "none";
+
+    placeholder.style.display =
+      "flex";
+
+  }
+);
+
+
+/* INITIAL STATE */
+
+placeholder.style.display =
+  avatar.getAttribute("src")
+    ? "none"
+    : "flex";
+
+</script>
+
 </body>
 </html>
