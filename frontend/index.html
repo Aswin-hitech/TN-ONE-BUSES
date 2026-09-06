@@ -12,6 +12,7 @@
 
 <link rel="stylesheet"
       href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
 </head>
 
 <body>
@@ -30,7 +31,7 @@
 
       <!-- Logo Placeholder -->
       <div class="logo-placeholder">
-        <img src="../assets/bus%20logo.jpg" alt="THE TN ONE logo" />
+        <img src="./assets/buslogo.jpg" alt="THE TN ONE logo" />
       </div>
 
       <div class="brand-text">
@@ -176,7 +177,7 @@
     </a>
 
     <a class="nav-item" href="profile.html">
-      <span class="nav-icon">○</span>
+      <span class="nav-icon"><img src="https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcThJWIh4nypYwlaQ_qlJhGAm_wGQnhPFQmfKXxji24YeQ&s=10"></span>
       <span>Profile</span>
     </a>
 
@@ -190,6 +191,8 @@
 <script src="js/search.js"></script>
 
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+<script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
 
 
 <script>
@@ -215,40 +218,65 @@ L.control.zoom({
 let currentMarker = null;
 
 
-document
-  .getElementById("search-route")
-  .addEventListener("click", function () {
+  document
+    .getElementById("search-route")
+    .addEventListener("click", async function () {
 
-    const origin =
-      document
-        .getElementById("origin-input")
-        .value
-        .trim();
+      const origin = document.getElementById("origin-input").value.trim();
+      const destination = document.getElementById("to-input").value.trim();
 
-    const destination =
-      document
-        .getElementById("to-input")
-        .value
-        .trim();
+      if (!origin || !destination) {
+        alert("Enter both starting point and destination.");
+        return;
+      }
 
+      const searchBtn = document.getElementById("search-route");
+      const origText = searchBtn.textContent;
+      searchBtn.textContent = "Routing...";
+      searchBtn.disabled = true;
 
-    if (!origin || !destination) {
-      alert("Enter both starting point and destination.");
-      return;
-    }
+      const geocoder = L.Control.Geocoder.nominatim();
+      const geocode = (query) => new Promise(resolve => {
+        if (query === "Your location" && currentMarker) {
+          resolve(currentMarker.getLatLng());
+          return;
+        }
+        geocoder.geocode(query, (results) => {
+          resolve(results.length > 0 ? results[0].center : null);
+        });
+      });
 
+      const p1 = await geocode(origin);
+      const p2 = await geocode(destination);
 
-    document
-      .getElementById("route-actions")
-      .hidden = false;
+      searchBtn.textContent = origText;
+      searchBtn.disabled = false;
 
+      if (!p1 || !p2) {
+        alert("Could not find one of the locations on the map.");
+        return;
+      }
 
-    document
-      .getElementById("route-label")
-      .textContent =
-      origin + " → " + destination;
+      if (window.routingControl) {
+        map.removeControl(window.routingControl);
+      }
 
-  });
+      window.routingControl = L.Routing.control({
+        waypoints: [p1, p2],
+        routeWhileDragging: false,
+        addWaypoints: false,
+        show: false,
+        createMarker: function(i, wp) {
+          return L.marker(wp.latLng).bindPopup(i === 0 ? origin : destination);
+        },
+        lineOptions: {
+          styles: [{color: '#4285F4', opacity: 0.9, weight: 6}]
+        }
+      }).addTo(map);
+
+      document.getElementById("route-actions").hidden = false;
+      document.getElementById("route-label").textContent = origin + " → " + destination;
+    });
 
 
 document

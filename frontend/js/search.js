@@ -16,38 +16,42 @@ document.addEventListener("DOMContentLoaded", async () => {
   const resultsContainer = document.getElementById("results-container");
 
   let fromToMode = false;
-  modeToggle.addEventListener("click", () => {
-    fromToMode = !fromToMode;
-    fromToFields.classList.toggle("active", fromToMode);
-    singleField.style.display = fromToMode ? "none" : "flex";
-    modeToggle.textContent = fromToMode
-      ? "Switch to destination-only search"
-      : "Know your starting point too? Search From \u2192 To";
-  });
+  if (modeToggle) {
+    modeToggle.addEventListener("click", () => {
+      fromToMode = !fromToMode;
+      fromToFields.classList.toggle("active", fromToMode);
+      singleField.style.display = fromToMode ? "none" : "flex";
+      modeToggle.textContent = fromToMode
+        ? "Switch to destination-only search"
+        : "Know your starting point too? Search From \u2192 To";
+    });
+  }
 
   setupAutocomplete(destinationInput);
   setupAutocomplete(originInput);
   setupAutocomplete(toInput);
 
-  searchForm.addEventListener("submit", async (e) => {
-    e.preventDefault();
-    resultsContainer.innerHTML = `<p class="empty-state">Searching for buses\u2026</p>`;
+  if (searchForm) {
+    searchForm.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      resultsContainer.innerHTML = `<p class="empty-state">Searching for buses\u2026</p>`;
 
-    try {
-      let res;
-      if (fromToMode && originInput.value.trim() && toInput.value.trim()) {
-        res = await TNOne.get("/api/search", { from: originInput.value.trim(), to: toInput.value.trim() });
-      } else if (destinationInput.value.trim()) {
-        res = await TNOne.get("/api/search", { destination: destinationInput.value.trim() });
-      } else {
-        resultsContainer.innerHTML = `<p class="empty-state">Please enter a destination to search.</p>`;
-        return;
+      try {
+        let res;
+        if (fromToMode && originInput.value.trim() && toInput.value.trim()) {
+          res = await TNOne.get("/api/search", { from: originInput.value.trim(), to: toInput.value.trim() });
+        } else if (destinationInput.value.trim()) {
+          res = await TNOne.get("/api/search", { destination: destinationInput.value.trim() });
+        } else {
+          resultsContainer.innerHTML = `<p class="empty-state">Please enter a destination to search.</p>`;
+          return;
+        }
+        renderResults(res.data.results, destinationInput.value.trim() || toInput.value.trim());
+      } catch (err) {
+        resultsContainer.innerHTML = `<p class="empty-state">${escapeHtml(err.message)}</p>`;
       }
-      renderResults(res.data.results, destinationInput.value.trim() || toInput.value.trim());
-    } catch (err) {
-      resultsContainer.innerHTML = `<p class="empty-state">${escapeHtml(err.message)}</p>`;
-    }
-  });
+    });
+  }
 
   function renderResults(results, label) {
     if (!results || results.length === 0) {

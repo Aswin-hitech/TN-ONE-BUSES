@@ -373,6 +373,14 @@
   .maps-app .nav-icon {
     font-size: 23px;
   }
+
+  .maps-app .search-card {
+    width: min(100%, 84vw);
+  }
+
+  .maps-app .map-top {
+    padding: 8px;
+  }
 }
 
 /* ====================================================
@@ -1425,5 +1433,81 @@
 @media (min-width: 481px) and (max-width: 719px) {
   .flex-wrap-tablet {
     flex-wrap: wrap !important;
+  }
+}
+
+/* ----- INDEX MAP: PHONE AND TABLET SIZING ----- */
+@media (max-width: 719px) {
+  .maps-app .map-header {
+    gap: clamp(6px, 2vw, 10px);
+    margin-bottom: clamp(8px, 1.5vh, 14px);
+  }
+
+  .maps-app .logo-placeholder {
+    width: clamp(36px, 11vw, 48px);
+    height: clamp(36px, 11vw, 48px);
+  }
+
+  .maps-app .brand-text {
+    padding: clamp(6px, 1.5vw, 9px) clamp(10px, 2.5vw, 16px);
+  }
+
+  .maps-app .search-card {
+    width: min(88vw, 400px);
+    max-height: 42vh;
+  }
+
+  .maps-app .search-button {
+    min-height: clamp(34px, 6vh, 46px);
+  }
+}
+
+@media (min-width: 720px) and (max-width: 1199px) {
+  .maps-app .search-card {
+    width: min(48vw, 460px);
+  }
+
+  .maps-app .bottom-nav {
+    width: min(90vw, 900px);
+  }
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+  .maps-app .map-top {
+    padding: 6px 10px;
+  }
+
+  .maps-app .map-header {
+    margin-bottom: 6px;
+  }
+
+  .maps-app .search-card {
+    width: min(52vw, 420px);
+    padding: 8px;
+  }
+
+  .maps-app .location-line {
+    height: 32px;
+  }
+
+  .maps-app .search-button {
+    min-height: 30px;
+    padding: 6px;
+    margin-top: 4px;
+  }
+
+  .maps-app .bottom-nav {
+    bottom: 6px;
+    padding: 6px 10px;
+  }
+
+  .maps-app .nav-item {
+    padding: 5px 12px;
+  }
+
+  .maps-app .nav-icon {
+    width: 22px;
+    height: 22px;
+    font-size: 20px;
   }
 }

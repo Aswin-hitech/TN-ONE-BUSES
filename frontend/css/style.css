@@ -929,6 +929,15 @@ a {
   font-size: 16px;
 }
 
+.login-screen .login-icon img {
+  display: block;
+  width: clamp(48px, 12vw, 96px);
+  height: clamp(48px, 12vh, 96px);
+  object-fit: contain;
+  margin: 0 auto 14px;
+  border-radius: 12px;
+}
+
 .google-btn {
   display: inline-flex;
   align-items: center;
@@ -1068,6 +1077,38 @@ a {
   border-radius: 50%;
 }
 
+.maps-app .map-top {
+  padding: clamp(8px, 1.5vw, 20px);
+}
+
+.maps-app .search-card {
+  width: min(100%, clamp(280px, 38vw, 460px));
+  max-width: none;
+  padding: clamp(10px, 1.5vw, 16px);
+  border-radius: clamp(14px, 2vw, 24px);
+}
+
+.maps-app .location-line {
+  height: clamp(36px, 5vh, 48px);
+}
+
+.maps-app .location-line input {
+  min-width: 0;
+  padding: clamp(7px, 1vh, 10px) clamp(8px, 1vw, 12px);
+  font-size: clamp(13px, 1.2vw, 16px);
+}
+
+.maps-app .location-dot {
+  width: clamp(8px, 1vw, 12px);
+  height: clamp(8px, 1vw, 12px);
+}
+
+.maps-app .search-button {
+  padding: clamp(9px, 1.4vh, 14px);
+  margin-top: clamp(6px, 1vh, 10px);
+  font-size: clamp(13px, 1.2vw, 15px);
+}
+
 .brand {
   font-size: 16px;
   font-weight: 800;
@@ -1079,16 +1120,14 @@ a {
   margin-top: 2px;
 }
 
-/* SEARCH CARD – glass */
+/* SEARCH CARD – containerized */
 .search-card {
-  background: var(--glass-bg);
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
+  background: var(--color-surface-solid);
   border-radius: var(--radius-lg);
   padding: 16px;
   max-width: 520px;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   pointer-events: auto;
   transition: all var(--transition-smooth);
 }
@@ -1111,7 +1150,8 @@ a {
   border: none;
   outline: none;
   width: 100%;
-  font-size: 16px;
+  font-size: 18px;
+  font-weight: 600;
   padding: 10px 12px;
   background: transparent;
   color: var(--color-text);
@@ -1119,7 +1159,8 @@ a {
 
 .location-line input::placeholder {
   color: var(--color-text-muted);
-  opacity: 0.5;
+  font-weight: 600;
+  opacity: 0.7;
 }
 
 .location-dot {
@@ -1167,11 +1208,11 @@ a {
   background: var(--color-primary-dark);
 }
 
-/* MAP CONTROLS – glass */
+/* MAP CONTROLS – containerized */
 .map-controls {
   position: absolute;
   right: 16px;
-  bottom: 160px;
+  bottom: 220px; /* Moved up to clear quick actions */
   z-index: 1000;
   display: flex;
   flex-direction: column;
@@ -1180,55 +1221,50 @@ a {
 
 .map-control {
   border: none;
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+  background: var(--color-surface-solid);
   border-radius: var(--radius-xl);
   padding: 12px 16px;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   cursor: pointer;
   font-size: 14px;
-  font-weight: 600;
+  font-weight: 700;
   color: var(--color-text);
   transition: all var(--transition-smooth);
 }
 
 .map-control:hover {
   transform: scale(1.06);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--color-bg);
 }
 
-/* QUICK ACTIONS – glass */
+/* QUICK ACTIONS – containerized */
 .quick-actions {
   position: absolute;
   right: 16px;
   bottom: 100px;
   z-index: 1000;
   display: flex;
+  flex-direction: column;
+  align-items: flex-end;
   gap: 10px;
-  flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .quick-action {
-  background: var(--glass-bg);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  padding: 10px 18px;
+  background: var(--color-surface-solid);
+  padding: 12px 20px;
   border-radius: 30px;
   text-decoration: none;
   color: var(--color-text);
-  font-size: 14px;
-  font-weight: 600;
-  border: 1px solid var(--glass-border);
-  box-shadow: var(--glass-shadow);
+  font-size: 15px;
+  font-weight: 700;
+  border: none;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
   transition: all var(--transition-smooth);
 }
 
 .quick-action:hover {
   transform: translateY(-3px) scale(1.04);
-  background: rgba(255, 255, 255, 0.6);
+  background: var(--color-bg);
 }
 
 .quick-action span {
