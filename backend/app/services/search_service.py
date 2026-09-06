@@ -26,16 +26,63 @@ def _parse_time_to_minutes(time_str: str) -> int:
     return h * 60 + m
 
 
+import difflib
+
+def _normalize_place_name(name: str) -> str:
+    if not name:
+        return ""
+    n = name.lower()
+    n = re.sub(r'[^a-z0-9]', '', n)
+    n = n.replace('ph', 'p').replace('dh', 'd').replace('th', 't')
+    n = n.replace('bh', 'b').replace('gh', 'g').replace('kh', 'k').replace('sh', 's')
+    n = re.sub(r'([a-z])\1+', r'\1', n)
+    return n
+
+def _partial_ratio(s1: str, s2: str) -> float:
+    if not s1 or not s2:
+        return 0.0
+    if len(s1) > len(s2):
+        s1, s2 = s2, s1
+    
+    best_ratio = 0.0
+    for i in range(len(s2) - len(s1) + 1):
+        sub = s2[i:i+len(s1)]
+        ratio = difflib.SequenceMatcher(None, s1, sub).ratio()
+        if ratio > best_ratio:
+            best_ratio = ratio
+            
+    for i in range(len(s2) - len(s1) + 1):
+        sub = s2[i:i+len(s1)+1]
+        ratio = difflib.SequenceMatcher(None, s1, sub).ratio()
+        if ratio > best_ratio:
+            best_ratio = ratio
+            
+    return best_ratio
+
+def fuzzy_match(query: str, target: str) -> bool:
+    if not query or not target:
+        return False
+        
+    q_norm = _normalize_place_name(query)
+    t_norm = _normalize_place_name(target)
+    
+    if q_norm in t_norm or t_norm in q_norm:
+        return True
+        
+    if _partial_ratio(q_norm, t_norm) >= 0.80:
+        return True
+        
+    return False
+
 def _bus_touches_stop(bus: Bus, stop_name: str) -> int:
     """
-    Returns the 0-based index of stop_name in the bus route if it matches, else -1.
+    Returns the 0-based index of stop_name in the bus route if it matches fuzzily, else -1.
     Matches against start_stop, destination_stop, and boarded_stops.
     """
     if not stop_name:
         return -1
-    q = stop_name.strip().lower()
     for idx, s in enumerate(bus.get_stops_list()):
-        if q in s.lower() or s.lower() in q:
+        if fuzzy_match(stop_name, s):
             return idx
     return -1
 
@@ -50,17 +97,15 @@ def _serialize_bus_result(bus: Bus, now_dt: datetime, from_name: str = None, to_
     to_spot_time = None
 
     if from_name:
-        fn_lower = from_name.strip().lower()
         for sp in spot_timings_list:
-            if fn_lower in sp["stop"].lower() or sp["stop"].lower() in fn_lower:
+            if fuzzy_match(from_name, sp["stop"]):
                 if sp.get("time"):
                     from_spot_time = sp["time"]
                     break
 
     if to_name:
-        tn_lower = to_name.strip().lower()
         for sp in spot_timings_list:
-            if tn_lower in sp["stop"].lower() or sp["stop"].lower() in tn_lower:
+            if fuzzy_match(to_name, sp["stop"]):
                 if sp.get("time"):
                     to_spot_time = sp["time"]
                     break
@@ -163,11 +208,10 @@ def search_by_origin(origin_query: str) -> dict:
     matched = []
     other = []
 
-    q = origin_query.strip().lower()
     for b in all_buses:
         orig_idx = _bus_touches_stop(b, origin_query)
         if orig_idx != -1:
-            is_start = q in (b.start_stop or "").lower() or (b.start_stop or "").lower() in q
+            is_start = fuzzy_match(origin_query, b.start_stop or "")
             res = _serialize_bus_result(b, now, from_name=origin_query)
             res["_is_origin_start"] = is_start
             matched.append(res)
