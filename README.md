@@ -200,3 +200,8 @@ date-rollover transitions, and stale reports.
 - **Community verification** — 👍 Confirm / ⚠️ Report incorrect, using the `confirm_count`/`flag_count` columns already present on `bus_reports`
 - **Admin dashboard** — manage buses/stops/routes, review flagged reports, view usage statistics (service-layer functions are already separated from route handlers to support this cleanly)
 - **Analytics** on route coverage and reporting activity by area
+
+
+## DEVELOPED BY
+# ASWIN N - KIT Coimbatore
+
