@@ -566,7 +566,7 @@
       // Geocoding & Route Calculation
       async function calculateAndDrawRoute(from, to) {
         if (routingControl) {
-          try { map.removeControl(routingControl); } catch(_) {}
+          try { map.removeLayer(routingControl); } catch(_) {}
           routingControl = null;
         }
         if (fallbackRoute) {
@@ -613,34 +613,26 @@
         }).addTo(map).bindPopup(`<b>Destination:</b> ${to}`);
 
         try {
-          routingControl = L.Routing.control({
-            waypoints: [latLng1, latLng2],
-            routeWhileDragging: false,
-            addWaypoints: false,
-            show: false,
-            createMarker: () => null, // We already create custom circle markers
-            lineOptions: {
-              styles: [
-                { color: '#1a73e8', opacity: 0.9, weight: 6 }
-              ]
-            }
-          })
-          .on('routesfound', (e) => {
-            const routes = e.routes;
-            if (routes && routes.length > 0) {
-              const summary = routes[0].summary;
-              const distKm = (summary.totalDistance / 1000).toFixed(1);
-              panelDistanceBadge.textContent = `${distKm} km`;
-              
-              // Fit map bounds with room for the bottom panel
-              const bounds = L.latLngBounds([latLng1, latLng2]);
-              map.fitBounds(bounds, { padding: [80, 80] });
-            }
-          })
-          .on('routingerror', () => {
+          const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${p1[1]},${p1[0]};${p2[1]},${p2[0]}?overview=full&geometries=geojson`;
+          const res = await fetch(osrmUrl);
+          const data = await res.json();
+
+          if (data.code === "Ok" && data.routes && data.routes.length > 0) {
+            const route = data.routes[0];
+            const distKm = (route.distance / 1000).toFixed(1);
+            panelDistanceBadge.textContent = `${distKm} km`;
+            
+            const coordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
+            routingControl = L.polyline(coordinates, {
+              color: '#1a73e8',
+              weight: 6,
+              opacity: 0.9
+            }).addTo(map);
+
+            map.fitBounds(routingControl.getBounds(), { padding: [80, 80] });
+          } else {
             drawFallbackPolyline(latLng1, latLng2, from, to);
-          })
-          .addTo(map);
+          }
         } catch (_) {
           drawFallbackPolyline(latLng1, latLng2, from, to);
         }
@@ -648,7 +640,7 @@
 
       function drawFallbackPolyline(latLng1, latLng2, from, to) {
         if (routingControl) {
-          try { map.removeControl(routingControl); } catch(_) {}
+          try { map.removeLayer(routingControl); } catch(_) {}
           routingControl = null;
         }
         fallbackRoute = L.polyline([latLng1, latLng2], {
@@ -696,13 +688,16 @@
             const lng = pos.coords.longitude;
             map.setView([lat, lng], 14);
 
+            const customIcon = L.icon({
+              iconUrl: 'https://static.vecteezy.com/system/resources/thumbnails/055/364/763/small/a-black-silhouette-of-a-man-standing-icon-isolated-free-png.png',
+              iconSize: [40, 40], // size of the icon
+              iconAnchor: [20, 40], // point of the icon which will correspond to marker's location
+              popupAnchor: [0, -40] // point from which the popup should open relative to the iconAnchor
+            });
+
             if (userMarker) map.removeLayer(userMarker);
-            userMarker = L.circleMarker([lat, lng], {
-              radius: 8,
-              fillColor: "#1a73e8",
-              color: "#ffffff",
-              weight: 3,
-              fillOpacity: 1
+            userMarker = L.marker([lat, lng], {
+              icon: customIcon
             }).addTo(map).bindPopup("Your current location").openPopup();
 
             originInput.value = "Your location";
