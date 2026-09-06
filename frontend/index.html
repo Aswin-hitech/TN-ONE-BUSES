@@ -55,26 +55,6 @@
           🔍 Search Buses
         </button>
       </div>
-
-      <!-- ROUTE SELECTED DIVISION (Right below the source-destination box) -->
-      <div id="route-actions" class="route-selected-card" style="display:none;">
-        <div class="route-selected-header">
-          <span class="route-selected-icon">🚌</span>
-          <div class="route-selected-text">
-            <span class="route-selected-badge">Route Selected</span>
-            <span id="route-label" class="route-selected-title">—</span>
-          </div>
-        </div>
-
-        <div class="route-selected-buttons">
-          <button id="view-buses-btn" class="btn-primary" style="padding:10px 14px; font-size:14px;">
-            🚌 View Buses
-          </button>
-          <button id="add-bus-btn" class="btn-secondary" style="padding:10px 14px; font-size:14px;">
-            ＋ Add Bus
-          </button>
-        </div>
-      </div>
     </div>
 
     <!-- FLOATING ACTIONS OVER MAP -->
@@ -88,6 +68,50 @@
         <span>＋</span>
         <span>Add Bus</span>
       </a>
+    </div>
+
+    <!-- BOTTOM BUS PANEL (Expandable / Collapsible Bottom Sheet) -->
+    <div id="bus-bottom-panel" class="bottom-bus-panel">
+      <!-- Handle for dragging/tapping -->
+      <div class="bus-panel-handle-bar" id="bus-panel-handle">
+        <div class="bus-panel-handle-pill"></div>
+      </div>
+
+      <!-- Panel Header (Tappable to toggle collapse/expand) -->
+      <div class="bus-panel-header" id="bus-panel-header">
+        <div class="bus-panel-header-main">
+          <div class="bus-panel-route" id="panel-route-title">Select route to see buses</div>
+          <div class="bus-panel-distance" id="panel-distance-badge">0.0 km</div>
+        </div>
+        <div class="bus-panel-toggle-indicator" id="panel-toggle-btn">
+          <span class="toggle-icon">▲</span>
+          <span class="toggle-text">View Buses</span>
+        </div>
+      </div>
+
+      <!-- Panel Body (Scrollable bus results) -->
+      <div class="bus-panel-body" id="bus-panel-body">
+        <!-- Next Buses Section -->
+        <div class="bus-panel-section-title">
+          <span>NEXT BUSES</span>
+          <span id="panel-bus-count" style="font-weight: normal; color: var(--color-text-muted);">0 found</span>
+        </div>
+
+        <!-- Bus List Container -->
+        <div id="panel-bus-list" class="panel-bus-list">
+          <div class="panel-empty-state">
+            <div style="font-size: 28px; margin-bottom: 6px;">🗺️</div>
+            <p>Select From and To locations above to find buses.</p>
+          </div>
+        </div>
+
+        <!-- Add Bus CTA within panel -->
+        <div class="panel-footer-action">
+          <a id="panel-add-bus-btn" href="report.html" class="btn-primary" style="padding: 10px 16px; font-size: 14px;">
+            ＋ Add Bus for this route
+          </a>
+        </div>
+      </div>
     </div>
 
     <!-- BOTTOM NAVIGATION -->
@@ -148,20 +172,49 @@
       const destInput = document.getElementById("destination-input");
       const searchBtn = document.getElementById("search-route-btn");
       const locateBtn = document.getElementById("locate-btn");
-      const routeCard = document.getElementById("route-actions");
-      const routeLabel = document.getElementById("route-label");
-      const viewBusesBtn = document.getElementById("view-buses-btn");
-      const addBusBtn = document.getElementById("add-bus-btn");
 
-      // Setup Stop Autocomplete for Origin & Destination
+      // Bottom Panel Elements
+      const busPanel = document.getElementById("bus-bottom-panel");
+      const busPanelHeader = document.getElementById("bus-panel-header");
+      const busPanelHandle = document.getElementById("bus-panel-handle");
+      const panelRouteTitle = document.getElementById("panel-route-title");
+      const panelDistanceBadge = document.getElementById("panel-distance-badge");
+      const panelToggleBtn = document.getElementById("panel-toggle-btn");
+      const panelBusList = document.getElementById("panel-bus-list");
+      const panelBusCount = document.getElementById("panel-bus-count");
+      const panelAddBusBtn = document.getElementById("panel-add-bus-btn");
+
+      // Panel Expand/Collapse Toggle
+      let isPanelExpanded = false;
+      function togglePanel(expand) {
+        if (expand !== undefined) {
+          isPanelExpanded = expand;
+        } else {
+          isPanelExpanded = !isPanelExpanded;
+        }
+        busPanel.classList.toggle("expanded", isPanelExpanded);
+        const toggleIcon = panelToggleBtn.querySelector(".toggle-icon");
+        const toggleText = panelToggleBtn.querySelector(".toggle-text");
+        if (isPanelExpanded) {
+          toggleIcon.textContent = "▼";
+          toggleText.textContent = "Collapse";
+        } else {
+          toggleIcon.textContent = "▲";
+          toggleText.textContent = "View Buses";
+        }
+      }
+
+      busPanelHeader.addEventListener("click", () => togglePanel());
+      busPanelHandle.addEventListener("click", () => togglePanel());
+
+      // Stop Autocomplete
       setupAutocomplete(originInput, () => {
-        if (destInput.value.trim()) triggerRouteSelection();
+        if (destInput.value.trim()) triggerRouteFlow();
       });
       setupAutocomplete(destInput, () => {
-        if (originInput.value.trim()) triggerRouteSelection();
+        if (originInput.value.trim()) triggerRouteFlow();
       });
 
-      // Handle Search Button Click
       searchBtn.addEventListener("click", () => {
         const from = originInput.value.trim();
         const to = destInput.value.trim();
@@ -171,48 +224,261 @@
           return;
         }
         if (from && to) {
-          triggerRouteSelection();
+          triggerRouteFlow();
         } else {
-          navigateToSearch(from, to);
+          window.location.href = `search.html?${from ? "from=" + encodeURIComponent(from) : ""}${to ? "&to=" + encodeURIComponent(to) : ""}`;
         }
       });
 
-      function triggerRouteSelection() {
+      // Main Orchestration Flow
+      async function triggerRouteFlow() {
         const from = originInput.value.trim() || "Your location";
         const to = destInput.value.trim();
         if (!to) return;
 
-        routeLabel.textContent = `${from} → ${to}`;
-        routeCard.style.display = "block";
-
-        // Persist selection
+        // Persist route
         sessionStorage.setItem("tn_one_from", from);
         sessionStorage.setItem("tn_one_to", to);
 
-        // Draw Route on Map
+        // Update Panel Header
+        panelRouteTitle.textContent = `${from} → ${to}`;
+        panelDistanceBadge.textContent = "Calculating...";
+        panelAddBusBtn.href = `report.html?from=${encodeURIComponent(from !== "Your location" ? from : "")}&to=${encodeURIComponent(to)}`;
+
+        // Open Bottom Bus Panel (visible)
+        busPanel.classList.add("visible");
+        togglePanel(true); // Open expanded to show buses immediately
+
+        // 1. Fetch Buses
+        loadBusesForRoute(from, to);
+
+        // 2. Geocode & Draw Route with distance
         calculateAndDrawRoute(from, to);
       }
 
-      viewBusesBtn.addEventListener("click", () => {
-        const from = originInput.value.trim();
-        const to = destInput.value.trim();
-        navigateToSearch(from, to);
-      });
+      // API: Load Buses & Sort Timings
+      async function loadBusesForRoute(from, to) {
+        panelBusList.innerHTML = `
+          <div class="panel-loading">
+            <div class="loading-spinner"></div>
+            <p style="font-size:13px; color:var(--color-text-secondary); margin-top:6px;">Finding buses for this route...</p>
+          </div>`;
+        panelBusCount.textContent = "Searching...";
 
-      addBusBtn.addEventListener("click", () => {
-        const from = originInput.value.trim();
-        const to = destInput.value.trim();
-        const params = new URLSearchParams();
-        if (from && from !== "Your location") params.set("from", from);
-        if (to) params.set("to", to);
-        window.location.href = `report.html?${params.toString()}`;
-      });
+        try {
+          const res = await TNOne.get("/api/search", {
+            from: from !== "Your location" ? from : "",
+            to: to
+          });
+          const results = res.data && res.data.results ? res.data.results : [];
+          renderPanelBuses(results, from, to);
+        } catch (err) {
+          panelBusList.innerHTML = `
+            <div class="panel-empty-state">
+              <div style="font-size:24px; margin-bottom:4px;">⚠️</div>
+              <p style="color:var(--color-error);">Could not load buses. Please try again.</p>
+            </div>`;
+          panelBusCount.textContent = "0 found";
+        }
+      }
 
-      function navigateToSearch(from, to) {
-        const params = new URLSearchParams();
-        if (from && from !== "Your location") params.set("from", from);
-        if (to) params.set("to", to);
-        window.location.href = `search.html?${params.toString()}`;
+      function renderPanelBuses(results, from, to) {
+        if (!results || results.length === 0) {
+          panelBusCount.textContent = "0 found";
+          panelBusList.innerHTML = `
+            <div class="panel-empty-state">
+              <div style="font-size:28px; margin-bottom:4px;">🚌</div>
+              <p style="font-weight:700; color:var(--color-text);">No buses found for this route</p>
+              <p style="font-size:12px; color:var(--color-text-secondary);">Be the first to add community timings!</p>
+            </div>`;
+          return;
+        }
+
+        panelBusCount.textContent = `${results.length} found`;
+
+        // Extract timing items with chronological sort relative to now
+        const now = new Date();
+        const nowMins = now.getHours() * 60 + now.getMinutes();
+
+        const cardsHtml = results.map((entry, idx) => {
+          const bus = entry.bus || {};
+          const busName = escapeHtml(bus.bus_name || "Bus");
+          const busNum = bus.bus_number ? `<span class="panel-bus-num">${escapeHtml(bus.bus_number)}</span>` : "";
+          const operator = escapeHtml(bus.operator || bus.bus_type || "");
+
+          // Format next bus timing
+          let timeDisplay = "";
+          let countdownText = "";
+          let isNearestUpcoming = idx === 0;
+
+          if (entry.boarding_time) {
+            const bt = new Date(entry.boarding_time);
+            timeDisplay = bt.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
+          } else if (bus.timings && bus.timings.length > 0) {
+            timeDisplay = bus.timings[0];
+          }
+
+          if (entry.minutes_until_boarding !== null && entry.minutes_until_boarding !== undefined) {
+            const mins = Math.round(entry.minutes_until_boarding);
+            countdownText = mins > 0 ? `in ${mins} min` : "Departing now";
+          }
+
+          // Next bus highlight card for the nearest upcoming bus
+          if (isNearestUpcoming) {
+            return `
+              <div class="panel-bus-item nearest-bus">
+                <div class="nearest-bus-badge">🟢 NEXT BUS</div>
+                <div class="panel-bus-row">
+                  <div class="panel-bus-left">
+                    <span class="panel-bus-title">🚌 ${busName}</span>
+                    ${busNum}
+                    ${operator ? `<div class="panel-bus-sub">${operator}</div>` : ""}
+                  </div>
+                  <div class="panel-bus-right">
+                    <span class="panel-bus-time">${timeDisplay}</span>
+                    ${countdownText ? `<span class="panel-bus-countdown">${countdownText}</span>` : ""}
+                  </div>
+                </div>
+              </div>`;
+          }
+
+          // Subsequent buses
+          return `
+            <div class="panel-bus-item">
+              <div class="panel-bus-row">
+                <div class="panel-bus-left">
+                  <span class="panel-bus-title">🚌 ${busName}</span>
+                  ${busNum}
+                  ${operator ? `<div class="panel-bus-sub">${operator}</div>` : ""}
+                </div>
+                <div class="panel-bus-right">
+                  <span class="panel-bus-time">${timeDisplay}</span>
+                  ${countdownText ? `<span class="panel-bus-countdown">${countdownText}</span>` : ""}
+                </div>
+              </div>
+            </div>`;
+        }).join("");
+
+        panelBusList.innerHTML = cardsHtml;
+      }
+
+      // Geocoding & Route Calculation
+      async function calculateAndDrawRoute(from, to) {
+        if (routingControl) {
+          try { map.removeControl(routingControl); } catch(_) {}
+          routingControl = null;
+        }
+        if (fallbackRoute) {
+          try { map.removeLayer(fallbackRoute); } catch(_) {}
+          fallbackRoute = null;
+        }
+        if (originMarker) {
+          try { map.removeLayer(originMarker); } catch(_) {}
+          originMarker = null;
+        }
+        if (destMarker) {
+          try { map.removeLayer(destMarker); } catch(_) {}
+          destMarker = null;
+        }
+
+        const [p1, p2] = await Promise.all([
+          geocodeLocation(from),
+          geocodeLocation(to)
+        ]);
+
+        if (!p1 || !p2) {
+          panelDistanceBadge.textContent = "Route found";
+          return;
+        }
+
+        const latLng1 = L.latLng(p1[0], p1[1]);
+        const latLng2 = L.latLng(p2[0], p2[1]);
+
+        // Start & Destination Markers (Google Maps inspired)
+        originMarker = L.circleMarker(latLng1, {
+          radius: 8,
+          fillColor: "#1a73e8",
+          color: "#ffffff",
+          weight: 3,
+          fillOpacity: 1
+        }).addTo(map).bindPopup(`<b>Start:</b> ${from}`);
+
+        destMarker = L.circleMarker(latLng2, {
+          radius: 8,
+          fillColor: "#ea4335",
+          color: "#ffffff",
+          weight: 3,
+          fillOpacity: 1
+        }).addTo(map).bindPopup(`<b>Destination:</b> ${to}`);
+
+        try {
+          routingControl = L.Routing.control({
+            waypoints: [latLng1, latLng2],
+            routeWhileDragging: false,
+            addWaypoints: false,
+            show: false,
+            createMarker: () => null, // We already create custom circle markers
+            lineOptions: {
+              styles: [
+                { color: '#1a73e8', opacity: 0.9, weight: 6 }
+              ]
+            }
+          })
+          .on('routesfound', (e) => {
+            const routes = e.routes;
+            if (routes && routes.length > 0) {
+              const summary = routes[0].summary;
+              const distKm = (summary.totalDistance / 1000).toFixed(1);
+              panelDistanceBadge.textContent = `${distKm} km`;
+              
+              // Fit map bounds with room for the bottom panel
+              const bounds = L.latLngBounds([latLng1, latLng2]);
+              map.fitBounds(bounds, { padding: [80, 80] });
+            }
+          })
+          .on('routingerror', () => {
+            drawFallbackPolyline(latLng1, latLng2, from, to);
+          })
+          .addTo(map);
+        } catch (_) {
+          drawFallbackPolyline(latLng1, latLng2, from, to);
+        }
+      }
+
+      function drawFallbackPolyline(latLng1, latLng2, from, to) {
+        if (routingControl) {
+          try { map.removeControl(routingControl); } catch(_) {}
+          routingControl = null;
+        }
+        fallbackRoute = L.polyline([latLng1, latLng2], {
+          color: '#1a73e8',
+          weight: 6,
+          opacity: 0.85,
+          dashArray: '8, 6'
+        }).addTo(map);
+
+        // Calculate direct distance in KM using Haversine formula
+        const distM = map.distance(latLng1, latLng2);
+        const distKm = (distM / 1000).toFixed(1);
+        panelDistanceBadge.textContent = `${distKm} km`;
+
+        map.fitBounds(fallbackRoute.getBounds(), { padding: [80, 80] });
+      }
+
+      async function geocodeLocation(name) {
+        if (name === "Your location" && userMarker) {
+          const ll = userMarker.getLatLng();
+          return [ll.lat, ll.lng];
+        }
+        try {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name + ", Tamil Nadu, India")}&limit=1`;
+          const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+          const data = await res.json();
+          if (data && data.length) {
+            return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
+          }
+        } catch (_) {}
+        return null;
       }
 
       // Geolocation Locate Button
@@ -234,12 +500,12 @@
               radius: 8,
               fillColor: "#1a73e8",
               color: "#ffffff",
-              weight: 2,
+              weight: 3,
               fillOpacity: 1
             }).addTo(map).bindPopup("Your current location").openPopup();
 
             originInput.value = "Your location";
-            if (destInput.value.trim()) triggerRouteSelection();
+            if (destInput.value.trim()) triggerRouteFlow();
           },
           () => {
             locateBtn.style.opacity = "1";
@@ -299,90 +565,6 @@
         document.addEventListener("click", (e) => {
           if (!wrap.contains(e.target)) list.classList.remove("active");
         });
-      }
-
-      // Route Calculation & Fallback Polyline
-      async function calculateAndDrawRoute(from, to) {
-        if (routingControl) {
-          map.removeControl(routingControl);
-          routingControl = null;
-        }
-        if (fallbackRoute) {
-          map.removeLayer(fallbackRoute);
-          fallbackRoute = null;
-        }
-        if (originMarker) {
-          map.removeLayer(originMarker);
-          originMarker = null;
-        }
-        if (destMarker) {
-          map.removeLayer(destMarker);
-          destMarker = null;
-        }
-
-        const [p1, p2] = await Promise.all([
-          geocodeLocation(from),
-          geocodeLocation(to)
-        ]);
-
-        if (!p1 || !p2) return;
-
-        const latLng1 = L.latLng(p1[0], p1[1]);
-        const latLng2 = L.latLng(p2[0], p2[1]);
-
-        try {
-          routingControl = L.Routing.control({
-            waypoints: [latLng1, latLng2],
-            routeWhileDragging: false,
-            addWaypoints: false,
-            show: false,
-            createMarker: function(i, wp) {
-              return L.marker(wp.latLng).bindPopup(i === 0 ? `From: ${from}` : `To: ${to}`);
-            },
-            lineOptions: {
-              styles: [{ color: '#1a73e8', opacity: 0.9, weight: 6 }]
-            }
-          })
-          .on('routingerror', () => {
-            drawFallback(latLng1, latLng2, from, to);
-          })
-          .addTo(map);
-        } catch (_) {
-          drawFallback(latLng1, latLng2, from, to);
-        }
-      }
-
-      function drawFallback(latLng1, latLng2, from, to) {
-        if (routingControl) {
-          try { map.removeControl(routingControl); } catch(_) {}
-          routingControl = null;
-        }
-        fallbackRoute = L.polyline([latLng1, latLng2], {
-          color: '#1a73e8',
-          weight: 6,
-          opacity: 0.85,
-          dashArray: '8, 6'
-        }).addTo(map);
-
-        originMarker = L.marker(latLng1).addTo(map).bindPopup(`From: ${from}`);
-        destMarker = L.marker(latLng2).addTo(map).bindPopup(`To: ${to}`);
-        map.fitBounds(fallbackRoute.getBounds(), { padding: [60, 60] });
-      }
-
-      async function geocodeLocation(name) {
-        if (name === "Your location" && userMarker) {
-          const ll = userMarker.getLatLng();
-          return [ll.lat, ll.lng];
-        }
-        try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(name + ", Tamil Nadu, India")}&limit=1`;
-          const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-          const data = await res.json();
-          if (data && data.length) {
-            return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-          }
-        } catch (_) {}
-        return null;
       }
 
       function escapeHtml(str) {

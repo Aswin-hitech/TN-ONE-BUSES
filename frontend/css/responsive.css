@@ -1,4 +1,4 @@
-﻿/* ====================================================
+/* ====================================================
    THE TN ONE – Responsive Design
    Breakpoints: Mobile (<768px), Tablet (768px - 1024px), Desktop (>1024px)
    ==================================================== */
@@ -22,23 +22,15 @@
     bottom: 24px;
   }
 
-  .bottom-sheet {
+  .bottom-bus-panel {
     max-width: 440px;
     left: 20px;
     right: auto;
-    bottom: 20px;
+    bottom: 24px;
     border-radius: var(--radius-xl);
     border: 1px solid var(--color-border);
-    padding: 16px 20px 20px;
     box-shadow: var(--shadow-lg);
-  }
-
-  .bottom-sheet.open {
-    transform: translateY(0);
-  }
-
-  .sheet-handle {
-    display: none;
+    padding-bottom: 0;
   }
 
   .bottom-nav {

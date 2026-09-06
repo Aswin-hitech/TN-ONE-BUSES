@@ -544,9 +544,9 @@ button, input, select, textarea {
 }
 
 /* ====================================================
-   BOTTOM SHEET (Route selection drawer)
+   BOTTOM BUS PANEL (Google Maps Expandable Sheet)
    ==================================================== */
-.bottom-sheet {
+.bottom-bus-panel {
   position: absolute;
   left: 0;
   right: 0;
@@ -556,116 +556,204 @@ button, input, select, textarea {
   box-shadow: var(--shadow-float);
   border: 1px solid var(--color-border);
   border-bottom: none;
-  padding: 12px 20px calc(var(--bottom-nav-height) + 20px);
   z-index: 1050;
-  transform: translateY(100%);
-  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  max-width: 500px;
+  max-width: 480px;
   margin: 0 auto;
+  transform: translateY(100%);
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), max-height 0.35s ease;
+  display: flex;
+  flex-direction: column;
+  max-height: 105px; /* Collapsed view showing header only */
+  overflow: hidden;
+  padding-bottom: var(--bottom-nav-height);
 }
 
-.bottom-sheet.open {
+.bottom-bus-panel.visible {
   transform: translateY(0);
 }
 
-.sheet-handle {
-  width: 40px;
+.bottom-bus-panel.expanded {
+  max-height: 70vh;
+}
+
+.bus-panel-handle-bar {
+  padding: 8px 0 4px;
+  cursor: pointer;
+  display: flex;
+  justify-content: center;
+}
+
+.bus-panel-handle-pill {
+  width: 36px;
   height: 4px;
   background: var(--color-text-muted);
   border-radius: var(--radius-full);
-  margin: 0 auto 12px;
   opacity: 0.4;
 }
 
-.sheet-header {
+.bus-panel-header {
   display: flex;
   align-items: center;
-  gap: 12px;
-  margin-bottom: 16px;
+  justify-content: space-between;
+  padding: 6px 18px 12px;
+  cursor: pointer;
+  user-select: none;
+  border-bottom: 1px solid var(--color-border-light);
 }
 
-.sheet-icon {
-  font-size: 28px;
-}
-
-.sheet-title {
-  font-size: 13px;
-  font-weight: 700;
-  color: var(--color-primary);
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
-}
-
-.sheet-route {
-  font-size: 18px;
-  font-weight: 800;
-  color: var(--color-text);
-}
-
-.sheet-actions {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-
-/* ====================================================
-   ROUTE SELECTED CARD (Directly below search card)
-   ==================================================== */
-.route-selected-card {
-  background: var(--color-surface);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: 14px 16px;
-  animation: slideDownFade 0.25s ease forwards;
-}
-
-@keyframes slideDownFade {
-  from {
-    opacity: 0;
-    transform: translateY(-8px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
-
-.route-selected-header {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  margin-bottom: 12px;
-}
-
-.route-selected-icon {
-  font-size: 24px;
-}
-
-.route-selected-text {
+.bus-panel-header-main {
   display: flex;
   flex-direction: column;
+  gap: 3px;
 }
 
-.route-selected-badge {
-  font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  color: var(--color-primary);
-  letter-spacing: 0.5px;
-}
-
-.route-selected-title {
+.bus-panel-route {
   font-size: 16px;
   font-weight: 800;
   color: var(--color-text);
   line-height: 1.2;
 }
 
-.route-selected-buttons {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
+.bus-panel-distance {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-primary);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.bus-panel-toggle-indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background: var(--color-border-light);
+  color: var(--color-text);
+  padding: 6px 12px;
+  border-radius: var(--radius-full);
+  font-size: 12px;
+  font-weight: 700;
+  transition: background 0.15s ease;
+}
+
+.bus-panel-toggle-indicator:hover {
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+}
+
+.bus-panel-body {
+  overflow-y: auto;
+  padding: 14px 18px 18px;
+  display: flex;
+  flex-direction: column;
   gap: 10px;
+}
+
+.bus-panel-section-title {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.6px;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.panel-bus-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.panel-bus-item {
+  background: var(--color-border-light);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  transition: transform 0.15s ease, background 0.15s ease;
+}
+
+.panel-bus-item.nearest-bus {
+  background: var(--color-surface);
+  border: 2px solid var(--color-primary);
+  box-shadow: var(--shadow-sm);
+}
+
+.nearest-bus-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-primary);
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.panel-bus-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.panel-bus-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.panel-bus-title {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.panel-bus-num {
+  display: inline-block;
+  background: var(--color-primary-light);
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  margin-left: 6px;
+}
+
+.panel-bus-sub {
+  font-size: 12px;
+  color: var(--color-text-secondary);
+}
+
+.panel-bus-right {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 2px;
+}
+
+.panel-bus-time {
+  font-size: 15px;
+  font-weight: 800;
+  color: var(--color-text);
+}
+
+.panel-bus-countdown {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--color-primary);
+}
+
+.panel-empty-state {
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+}
+
+.panel-footer-action {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-border-light);
 }
 
 /* ====================================================
