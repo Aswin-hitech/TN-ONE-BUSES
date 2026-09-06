@@ -314,25 +314,10 @@ document.addEventListener("DOMContentLoaded", async () => {
       resultCount.textContent = label;
 
       let html = `<div class="bus-list">${results.map(renderBusCard).join("")}</div>`;
-
-      if (otherBuses && otherBuses.length > 0) {
-        html += `
-          <div class="other-buses-divider" style="margin: 32px 0 16px; border-top: 1px dashed var(--color-border); padding-top: 20px;">
-            <h3 style="font-size: 15px; font-weight: 700; color: var(--color-text-secondary); margin-bottom: 4px;">
-              Other Available Buses
-            </h3>
-            <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 14px;">
-              Other active buses operating across Tamil Nadu.
-            </p>
-          </div>
-          <div class="bus-list">${otherBuses.map(renderBusCard).join("")}</div>`;
-      }
       resultsContainer.innerHTML = html;
     } else {
-      // 0 direct matches, but display other available buses
-      resultCount.textContent = otherBuses && otherBuses.length > 0
-        ? `0 direct matches · ${otherBuses.length} other buses available`
-        : "0 buses found";
+      // 0 direct matches
+      resultCount.textContent = "0 buses found";
 
       let html = `
         <div class="state-box" style="margin-bottom: 24px;">
@@ -343,19 +328,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             ＋ Add Bus for this route
           </a>
         </div>`;
-
-      if (otherBuses && otherBuses.length > 0) {
-        html += `
-          <div class="other-buses-divider" style="margin: 16px 0 14px; border-top: 1px dashed var(--color-border); padding-top: 18px;">
-            <h3 style="font-size: 15px; font-weight: 700; color: var(--color-text-secondary); margin-bottom: 4px;">
-              All Other Available Buses
-            </h3>
-            <p style="font-size: 12px; color: var(--color-text-muted); margin-bottom: 14px;">
-              Here are all other buses available in the network:
-            </p>
-          </div>
-          <div class="bus-list">${otherBuses.map(renderBusCard).join("")}</div>`;
-      }
+      
       resultsContainer.innerHTML = html;
     }
   }
@@ -547,20 +520,29 @@ document.addEventListener("DOMContentLoaded", async () => {
       }
       debounceTimer = setTimeout(async () => {
         try {
-          const res = await TNOne.get("/api/stops/search", { q });
-          const stops = res.data || [];
-          if (!stops.length) {
+          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ", Tamil Nadu, India")}&limit=5`;
+          const res = await fetch(url, { headers: { "Accept-Language": "en" } });
+          const data = await res.json();
+          if (!data || !data.length) {
             list.classList.remove("active");
             return;
           }
-          list.innerHTML = stops
-            .map((s) => `<div class="autocomplete-item" data-name="${escapeHtml(s.stop_name)}">${escapeHtml(s.stop_name)}</div>`)
+          list.innerHTML = data
+            .map((s) => {
+              const nameParts = s.display_name.split(", ");
+              const shortName = nameParts[0];
+              const subText = nameParts.slice(1, 3).join(", ");
+              return `<div class="autocomplete-item" data-name="${escapeHtml(shortName)}">
+                <div style="font-weight: 600;">${escapeHtml(shortName)}</div>
+                <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;">${escapeHtml(subText)}</div>
+              </div>`;
+            })
             .join("");
           list.classList.add("active");
         } catch (_) {
           list.classList.remove("active");
         }
-      }, 200);
+      }, 300);
     });
 
     list.addEventListener("click", (e) => {

@@ -1,197 +1,4 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>THE TN ONE — Community-Powered Bus Network</title>
-  <link rel="stylesheet" href="css/style.css" />
-  <link rel="stylesheet" href="css/responsive.css" />
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
 
-  <!-- Leaflet CSS -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
-</head>
-
-<body>
-  <div class="map-screen">
-    <!-- FULL VIEWPORT MAP -->
-    <div id="map"></div>
-
-    <!-- FLOATING BRAND & SEARCH CONTAINER -->
-    <div class="map-floating-top">
-      <div class="map-floating-header">
-        <div class="brand-area">
-          <div class="logo-placeholder">TN</div>
-          <div class="brand-text-block">
-            <span class="brand-title">THE TN ONE</span>
-            <span class="brand-tagline">Community-Powered Bus Network</span>
-          </div>
-        </div>
-        <div class="topbar-actions">
-          <div id="topbar-auth"></div>
-        </div>
-      </div>
-
-      <!-- SOURCE-DESTINATION BOX -->
-      <div class="search-card">
-        <div class="location-row">
-          <div class="route-connector-line"></div>
-          
-          <div class="location-line">
-            <span class="location-dot start"></span>
-            <input id="origin-input" type="text" placeholder="From / Your location" autocomplete="off" />
-          </div>
-
-          <div class="location-divider"></div>
-
-          <div class="location-line">
-            <span class="location-dot destination"></span>
-            <input id="destination-input" type="text" placeholder="Where to?" autocomplete="off" />
-          </div>
-        </div>
-
-        <button id="search-route-btn" class="search-button">
-          🔍 Search Buses
-        </button>
-      </div>
-    </div>
-
-    <!-- FLOATING ACTIONS OVER MAP -->
-    <div class="map-floating-actions">
-      <button id="locate-btn" class="fab-btn" title="Use my current location">
-        <span>📍</span>
-        <span>My Location</span>
-      </button>
-
-      <a href="report.html" class="fab-btn primary" title="Add a Bus">
-        <span>＋</span>
-        <span>Add Bus</span>
-      </a>
-    </div>
-
-    <!-- BOTTOM BUS PANEL (Expandable / Collapsible Bottom Sheet) -->
-    <div id="bus-bottom-panel" class="bottom-bus-panel">
-      <!-- Handle for dragging/tapping -->
-      <div class="bus-panel-handle-bar" id="bus-panel-handle">
-        <div class="bus-panel-handle-pill"></div>
-      </div>
-
-      <!-- Panel Header (Tappable to toggle collapse/expand) -->
-      <div class="bus-panel-header" id="bus-panel-header">
-        <div class="bus-panel-header-main">
-          <div class="bus-panel-route" id="panel-route-title">Select route to see buses</div>
-          <div class="bus-panel-distance" id="panel-distance-badge">0.0 km</div>
-        </div>
-        <div class="bus-panel-toggle-indicator" id="panel-toggle-btn">
-          <span class="toggle-icon">▲</span>
-          <span class="toggle-text">View Buses</span>
-        </div>
-      </div>
-
-      <!-- Panel Body (Scrollable bus results) -->
-      <div class="bus-panel-body" id="bus-panel-body">
-        <!-- Next Buses Section -->
-        <div class="bus-panel-section-title">
-          <span>NEXT BUSES</span>
-          <span id="panel-bus-count" style="font-weight: normal; color: var(--color-text-muted);">0 found</span>
-        </div>
-
-        <!-- Bus List Container -->
-        <div id="panel-bus-list" class="panel-bus-list">
-          <div class="panel-empty-state">
-            <div style="font-size: 28px; margin-bottom: 6px;">🗺️</div>
-            <p>Select From and To locations above to find buses.</p>
-          </div>
-        </div>
-
-        <!-- Add Bus CTA within panel -->
-        <div class="panel-footer-action">
-          <a id="panel-add-bus-btn" href="report.html" class="btn-primary" style="padding: 10px 16px; font-size: 14px;">
-            ＋ Add Bus for this route
-          </a>
-        </div>
-      </div>
-    </div>
-
-    <!-- BOTTOM NAVIGATION -->
-    <nav class="bottom-nav">
-      <a class="nav-item active" href="index.html">
-        <span class="nav-icon">⌂</span>
-        <span>Home</span>
-      </a>
-      <a class="nav-item" href="search.html">
-        <span class="nav-icon">⌕</span>
-        <span>Search</span>
-      </a>
-      <a class="nav-item" href="report.html">
-        <span class="nav-icon">＋</span>
-        <span>Add Bus</span>
-      </a>
-      <a class="nav-item" href="profile.html">
-        <span class="nav-icon">👤</span>
-        <span>Profile</span>
-      </a>
-    </nav>
-  </div>
-
-  <!-- ADD STOP MODAL -->
-  <div id="add-stop-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-dialog">
-      <div class="modal-header">
-        <div>
-          <h3 id="modal-bus-title" class="modal-title">Add Stop to Bus</h3>
-          <p id="modal-bus-subtitle" class="modal-subtitle">Add a missing stop between current stops</p>
-        </div>
-        <button type="button" id="close-add-stop-modal" class="modal-close-btn" title="Close">&times;</button>
-      </div>
-
-      <form id="add-stop-form">
-        <input type="hidden" id="add-stop-bus-id" />
-
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label class="form-label" for="add-stop-after-select">Insert after which stop?</label>
-          <select id="add-stop-after-select" class="form-select" required>
-            <!-- Dynamically populated with stops -->
-          </select>
-          <span class="form-hint">The new stop will appear immediately after this stop in the route.</span>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label class="form-label" for="add-stop-name-input">New Stop / Spot Name</label>
-          <input id="add-stop-name-input" type="text" class="form-input" placeholder="e.g. Town Hall, Gandhipuram" autocomplete="off" required />
-        </div>
-
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label class="form-label" for="add-stop-time-input">Passing / Halting Time (optional)</label>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input id="add-stop-time-input" type="time" class="form-input" style="max-width: 140px;" />
-            <span id="add-stop-time-ampm" class="timing-ampm-pill">--:-- --</span>
-          </div>
-          <span class="form-hint">Will be shown in 12-hour AM/PM format across the app.</span>
-        </div>
-
-        <div id="add-stop-alert" class="alert" style="display: none; margin-bottom: 14px;"></div>
-
-        <div class="modal-footer">
-          <button type="button" id="cancel-add-stop-btn" class="btn-text">Cancel</button>
-          <button type="submit" id="submit-add-stop-btn" class="btn-primary" style="width: auto; padding: 10px 20px;">
-            Save Stop to Route
-          </button>
-        </div>
-      </form>
-    </div>
-  </div>
-
-  <!-- Scripts -->
-  <script src="js/api.js"></script>
-  <script src="js/auth.js"></script>
-  <script src="js/theme.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
-
-  <script>
     document.addEventListener("DOMContentLoaded", async () => {
       // 1. Initialize Auth
       const authContainer = document.getElementById("topbar-auth");
@@ -566,7 +373,6 @@
       // Geocoding & Route Calculation
       async function calculateAndDrawRoute(from, to) {
         if (routingControl) {
-          try { map.removeControl(routingControl); } catch(_) {}
           try { map.removeLayer(routingControl); } catch(_) {}
           routingControl = null;
         }
@@ -614,7 +420,7 @@
         }).addTo(map).bindPopup(`<b>Destination:</b> ${to}`);
 
         try {
-          const osrmUrl = `https://routing.openstreetmap.de/routed-car/route/v1/driving/${p1[1]},${p1[0]};${p2[1]},${p2[0]}?overview=full&geometries=geojson`;
+          const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${p1[1]},${p1[0]};${p2[1]},${p2[0]}?overview=full&geometries=geojson`;
           const res = await fetch(osrmUrl);
           const data = await res.json();
 
@@ -641,7 +447,6 @@
 
       function drawFallbackPolyline(latLng1, latLng2, from, to) {
         if (routingControl) {
-          try { map.removeControl(routingControl); } catch(_) {}
           try { map.removeLayer(routingControl); } catch(_) {}
           routingControl = null;
         }
@@ -736,32 +541,20 @@
           }
           debounceTimer = setTimeout(async () => {
             try {
-              // Nominatim OpenStreetMap Search
-              const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ", Tamil Nadu, India")}&limit=5`;
-              const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-              const data = await res.json();
-              
-              if (!data || !data.length) {
+              const res = await TNOne.get("/api/stops/search", { q });
+              const stops = res.data || [];
+              if (!stops.length) {
                 list.classList.remove("active");
                 return;
               }
-              
-              list.innerHTML = data
-                .map((s) => {
-                  const nameParts = s.display_name.split(", ");
-                  const shortName = nameParts[0];
-                  const subText = nameParts.slice(1, 3).join(", ");
-                  return `<div class="autocomplete-item" data-name="${escapeHtml(shortName)}">
-                    <div style="font-weight: 600;">${escapeHtml(shortName)}</div>
-                    <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;">${escapeHtml(subText)}</div>
-                  </div>`;
-                })
+              list.innerHTML = stops
+                .map((s) => `<div class="autocomplete-item" data-name="${escapeHtml(s.stop_name)}">${escapeHtml(s.stop_name)}</div>`)
                 .join("");
               list.classList.add("active");
             } catch (_) {
               list.classList.remove("active");
             }
-          }, 300);
+          }, 200);
         });
 
         list.addEventListener("click", (e) => {
@@ -954,6 +747,4 @@
         return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
       }
     });
-  </script>
-</body>
-</html>
+  
