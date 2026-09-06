@@ -20,7 +20,7 @@ const TNAuth = (() => {
       link.href = "profile.html";
       const img = document.createElement("img");
       img.className = "avatar";
-      img.src = status.user.profile_picture || "https://ui-avatars.com/api/?name=" + encodeURIComponent(status.user.name);
+      img.src = status.user.profile_picture || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSEonC0Ow-K24Jc7Z1Vpi-bcBLDqJoJSeGwfD30gyXOyuf-e3EXnEBPxDFh&s=10";
       img.alt = status.user.name;
       link.appendChild(img);
       container.appendChild(link);

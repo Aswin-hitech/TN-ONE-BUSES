@@ -356,6 +356,23 @@
   .map-header .theme-controls {
     margin-left: auto;
   }
+
+  .maps-app .bottom-nav {
+    width: calc(100% - 20px);
+    bottom: 10px;
+    padding: 10px 6px;
+  }
+
+  .maps-app .nav-item {
+    min-width: 0;
+    flex: 1;
+    padding: 8px 4px;
+    font-size: 12px;
+  }
+
+  .maps-app .nav-icon {
+    font-size: 23px;
+  }
 }
 
 /* ====================================================
@@ -364,9 +381,6 @@
 @media (min-width: 1000px) {
   body {
     background: #eef1f4;
-    display: flex;
-    align-items: center;
-    justify-content: center;
     min-height: 100vh;
   }
 
@@ -375,15 +389,16 @@
   }
 
   .app-shell {
-    margin: 0 auto;
+    margin: 32px auto;
     min-height: calc(100vh - 64px);
     max-width: 1280px;
     width: min(100%, 1280px);
-    border-radius: 0;
+    border-radius: 20px;
     overflow: hidden;
     box-shadow: 0 20px 60px rgba(0, 0, 0, 0.08);
     border: 1px solid var(--color-border);
     padding: 0 72px 110px;
+    position: relative;
   }
 
   [data-theme="dark"] .app-shell {
@@ -687,6 +702,10 @@
   }
 
   /* ----- SEARCH PAGE ----- */
+  .search-page, .profile-page {
+    min-height: auto;
+  }
+  
   .search-header {
     padding: 28px 0;
   }
@@ -756,10 +775,10 @@
   }
 
   #map {
-    max-width: 1080px;
-    height: 390px !important;
-    margin-left: auto !important;
-    margin-right: auto !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-width: none !important;
+    margin: 0 !important;
   }
 }
 

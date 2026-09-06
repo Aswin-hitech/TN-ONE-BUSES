@@ -13,7 +13,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   const user = status.user;
   document.getElementById("profile-avatar").src =
-    user.profile_picture || "https://ui-avatars.com/api/?name=" + encodeURIComponent(user.name);
+    user.profile_picture || "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSEonC0Ow-K24Jc7Z1Vpi-bcBLDqJoJSeGwfD30gyXOyuf-e3EXnEBPxDFh&s=10";
   document.getElementById("profile-name").textContent = user.name;
   document.getElementById("profile-email").textContent = user.email;
 

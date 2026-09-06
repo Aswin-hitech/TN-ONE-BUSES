@@ -1,49 +1,331 @@
+
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
 <title>Sign in — THE TN ONE</title>
+
 <link rel="stylesheet" href="css/style.css" />
 <link rel="stylesheet" href="css/responsive.css" />
+<link rel="icon" href="favicon.ico" type="image/x-icon" />
+
 </head>
+
+
 <body>
+
 <script src="js/theme.js"></script>
-<div class="app-shell">
-  <div class="topbar">
-    <div class="brand">THE TN ONE</div>
+
+
+<div class="auth-page">
+
+
+  <!-- BRAND -->
+
+  <div class="auth-brand">
+
+    <div class="auth-logo">
+      TN
+    </div>
+
+    <div class="auth-brand-name">
+      THE TN ONE
+    </div>
+
+    <div class="auth-brand-sub">
+      Community-Powered Bus Network
+    </div>
+
   </div>
 
-  <div class="login-screen">
-    <div class="brand">🚌 THE TN ONE</div>
-    <p>Find your bus, share reliable timings, and make every trip easier.</p>
-    <button class="google-btn" id="google-signin-btn">
-      <span>🔐</span> Sign in with Google
+
+  <!-- LOGIN CARD -->
+
+  <div class="auth-card">
+
+    <h1>
+      Welcome to THE TN ONE
+    </h1>
+
+    <p class="auth-description">
+      Find buses, discover routes and share
+      useful bus information with your community.
+    </p>
+
+
+    <!-- GOOGLE -->
+
+    <button
+      class="google-btn auth-google"
+      id="google-signin-btn"
+    >
+
+      <span class="google-icon">
+        G
+      </span>
+
+      Continue with Google
+
     </button>
-    <div class="form-card" style="width:100%;max-width:360px;margin:22px 0 0;text-align:left">
-      <div class="field"><label for="username">Username</label><input id="username" autocomplete="username" required></div>
-      <div class="field"><label for="password">Password</label><input id="password" type="password" autocomplete="current-password" required></div>
-      <div id="auth-message" class="alert" hidden></div>
-      <button class="btn-primary" style="width:100%" id="password-btn">Sign in</button>
-      <button class="btn-secondary-cta" style="margin-top:10px" id="register-btn">Create account</button>
+
+
+    <!-- DIVIDER -->
+
+    <div class="auth-divider">
+
+      <span></span>
+
+      <p>
+        OR
+      </p>
+
+      <span></span>
+
     </div>
-    <p style="margin-top:22px;"><a href="index.html" style="text-decoration:underline;">Back to search</a></p>
+
+
+    <!-- USERNAME -->
+
+    <div class="field">
+
+      <label for="username">
+        Username
+      </label>
+
+      <input
+        id="username"
+        type="text"
+        placeholder="Enter your username"
+        autocomplete="username"
+      />
+
+    </div>
+
+
+    <!-- PASSWORD -->
+
+    <div class="field">
+
+      <label for="password">
+        Password
+      </label>
+
+      <input
+        id="password"
+        type="password"
+        placeholder="Enter your password"
+        autocomplete="current-password"
+      />
+
+    </div>
+
+
+    <!-- MESSAGE -->
+
+    <div
+      id="auth-message"
+      class="alert"
+      hidden
+    ></div>
+
+
+    <!-- LOGIN -->
+
+    <button
+      class="btn-primary auth-submit"
+      id="password-btn"
+    >
+      Sign in
+    </button>
+
+
+    <!-- REGISTER -->
+
+    <div class="register-text">
+
+      Don't have an account?
+
+      <button
+        id="register-btn"
+        class="register-link"
+      >
+        Create account
+      </button>
+
+    </div>
+
   </div>
+
+
+  <!-- BACK -->
+
+  <a
+    href="index.html"
+    class="auth-back"
+  >
+    ← Continue without signing in
+  </a>
+
+
+  <p class="auth-footer">
+    Built for bus riders across Tamil Nadu.
+  </p>
+
+
 </div>
+
 
 <script src="js/api.js"></script>
 <script src="js/auth.js"></script>
+
+
 <script>
-  document.getElementById("google-signin-btn").addEventListener("click", () => {
-    window.location.href = `${TNOne.API_BASE}/api/auth/login`;
-  });
-  async function submit(path) {
-    const message = document.getElementById("auth-message"); message.hidden = false;
-    try { await TNOne.post(path, {username: username.value, password: password.value}); window.location.href="index.html"; }
-    catch (e) { message.className="alert alert-error"; message.textContent=e.message; }
+
+
+/* GOOGLE LOGIN */
+
+document
+  .getElementById("google-signin-btn")
+  .addEventListener(
+    "click",
+    function () {
+
+      window.location.href =
+        `${TNOne.API_BASE}/api/auth/login`;
+
+    }
+  );
+
+
+/* AUTH */
+
+async function submitAuth(path) {
+
+  const username =
+    document
+      .getElementById("username")
+      .value
+      .trim();
+
+
+  const password =
+    document
+      .getElementById("password")
+      .value;
+
+
+  const message =
+    document.getElementById(
+      "auth-message"
+    );
+
+
+  if (!username || !password) {
+
+    message.hidden = false;
+
+    message.className =
+      "alert alert-error";
+
+    message.textContent =
+      "Please enter your username and password.";
+
+    return;
+
   }
-  document.getElementById("password-btn").onclick = () => submit("/api/auth/password");
-  document.getElementById("register-btn").onclick = () => submit("/api/auth/register");
+
+
+  message.hidden = true;
+
+
+  try {
+
+    await TNOne.post(
+      path,
+      {
+        username: username,
+        password: password
+      }
+    );
+
+
+    window.location.href =
+      "index.html";
+
+  }
+
+  catch (error) {
+
+    message.hidden = false;
+
+    message.className =
+      "alert alert-error";
+
+    message.textContent =
+      error.message ||
+      "Something went wrong.";
+
+  }
+
+}
+
+
+/* SIGN IN */
+
+document
+  .getElementById("password-btn")
+  .addEventListener(
+    "click",
+    function () {
+
+      submitAuth(
+        "/api/auth/password"
+      );
+
+    }
+  );
+
+
+/* REGISTER */
+
+document
+  .getElementById("register-btn")
+  .addEventListener(
+    "click",
+    function () {
+
+      submitAuth(
+        "/api/auth/register"
+      );
+
+    }
+  );
+
+
+/* ENTER KEY */
+
+document
+  .getElementById("password")
+  .addEventListener(
+    "keydown",
+    function (event) {
+
+      if (event.key === "Enter") {
+
+        submitAuth(
+          "/api/auth/password"
+        );
+
+      }
+
+    }
+  );
+
 </script>
+
+
 </body>
 </html>
