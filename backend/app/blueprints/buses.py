@@ -168,9 +168,18 @@ def update_bus(bus_id):
             bus.stop_timings = None
 
     if "bus_timings" in data:
-        bus.bus_timings = str(data["bus_timings"]).strip()
+        raw_timings = str(data["bus_timings"]).strip()
+        from app.models.bus import format_time_ampm
+        # Normalize each comma-separated timing to AM/PM
+        normalized = ", ".join(
+            format_time_ampm(t.strip()) for t in raw_timings.split(",") if t.strip()
+        )
+        bus.bus_timings = normalized or raw_timings
     elif "timings" in data and isinstance(data["timings"], list):
-        bus.bus_timings = ", ".join([str(t).strip() for t in data["timings"] if str(t).strip()])
+        from app.models.bus import format_time_ampm
+        bus.bus_timings = ", ".join(
+            format_time_ampm(str(t).strip()) for t in data["timings"] if str(t).strip()
+        )
 
     if "bus_fare" in data or "fare" in data:
         raw_fare = data.get("bus_fare", data.get("fare"))

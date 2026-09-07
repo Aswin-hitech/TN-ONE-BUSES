@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Auth state helper shared across pages: checks session status, renders
  * the login/avatar control in the top bar, and handles logout.
  */
@@ -51,7 +51,10 @@ const TNAuth = (() => {
     return div;
   }
 
-  async function requireLoginOrRedirect(redirectTo = "login.html") {
+  async function requireLoginOrRedirect(redirectTo) {
+    if (!redirectTo) {
+      redirectTo = "login.html?redirect=" + encodeURIComponent(window.location.href);
+    }
     const status = await getStatus();
     if (!status.authenticated) {
       window.location.href = redirectTo;

@@ -466,7 +466,7 @@
           // Other upcoming timings for this bus in AM/PM
           let subTimingsHtml = "";
           if (bus.timings && bus.timings.length > 1) {
-            const ampmList = bus.timings.map(t => formatTimeAmPm(t)).filter(t => t !== timeDisplay);
+            const ampmList = Array.from(new Set(bus.timings.map(t => formatTimeAmPm(t)))).filter(t => t !== timeDisplay);
             if (ampmList.length > 0) {
               subTimingsHtml = `<div style="font-size:11px; color:var(--color-text-secondary); margin-top:3px;">Later: ${escapeHtml(ampmList.slice(0, 4).join(", "))}</div>`;
             }
@@ -921,7 +921,7 @@
         if (!bus) return;
         addStopBusId.value = bus.id;
         modalBusTitle.textContent = `Add Stop to ${bus.bus_name || "Bus"}`;
-        modalBusSubtitle.textContent = `Route: ${bus.start_stop || "Start"} → ${bus.destination || "Destination"}`;
+        modalBusSubtitle.textContent = `Route: ${bus.start_stop || "Start"} → ${bus.destination_stop || bus.destination || "Destination"}`;
 
         let stops = [];
         if (bus.spots && Array.isArray(bus.spots) && bus.spots.length > 0) {
@@ -1064,7 +1064,7 @@
 
       function escapeHtml(str) {
         if (!str) return "";
-        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
       }
     });
   </script>

@@ -404,6 +404,8 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Route Spots with Timing Timeline
     let spotsHtml = "";
+    const safeBusId = Number(bus.id);
+    const fareDisplay = (entry.fare !== null && entry.fare !== undefined) ? entry.fare : (bus.bus_fare ?? 25);
     const spotsList = entry.spots || entry.stop_timings || (bus.spots || bus.stop_timings);
     if (spotsList && Array.isArray(spotsList) && spotsList.length > 0) {
       const items = spotsList.map((sp, sIdx) => {
@@ -428,10 +430,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
             <span>📍 Spots &amp; Passing Timings</span>
             <div style="display:flex; gap:6px;">
-              <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
+              <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${safeBusId}">
                 ➕ Add Stop
               </button>
-              <a href="edit.html?id=${bus.id}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
+              <a href="edit.html?id=${safeBusId}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
                 ✏️ Edit Details
               </a>
             </div>
@@ -449,10 +451,10 @@ document.addEventListener("DOMContentLoaded", async () => {
           <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
             <span>📍 Route Stops</span>
             <div style="display:flex; gap:6px;">
-              <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
+              <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${safeBusId}">
                 ➕ Add Stop
               </button>
-              <a href="edit.html?id=${bus.id}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
+              <a href="edit.html?id=${safeBusId}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
                 ✏️ Edit Details
               </a>
             </div>
@@ -484,7 +486,7 @@ document.addEventListener("DOMContentLoaded", async () => {
 
     // Freshness & notes
     const freshness = entry.freshness || { label: "Recently reported", level: "fresh" };
-    const notesHtml = entry.notes ? `<div style="font-style:italic; margin-top:6px; color:var(--color-text-secondary);">"${escapeHtml(entry.notes)}"</div>` : "";
+    const notesHtml = entry.notes ? `<div style="font-style:italic; margin-top:6px; color:var(--color-text-secondary);">${escapeHtml(entry.notes)}</div>` : "";
 
     // Photos
     let photosHtml = "";
@@ -503,7 +505,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             </div>
             ${operator ? `<span class="bus-operator">${operator}</span>` : ""}
           </div>
-          <div class="bus-fare">₹${entry.fare || 25}</div>
+          <div class="bus-fare">₹${fareDisplay}</div>
         </div>
 
         <div class="bus-route-path">${routeLine}</div>
@@ -520,11 +522,12 @@ document.addEventListener("DOMContentLoaded", async () => {
             <span class="freshness-dot ${escapeHtml(freshness.level)}"></span>
             <span>${escapeHtml(freshness.label)}</span>
           </div>
-          <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}" style="margin-left: auto;">
+          <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${safeBusId}" style="margin-left: auto;">
             ➕ Add Stop to Route
           </button>
         </div>
       </div>`;
+
   }
 
   function renderInitialState() {

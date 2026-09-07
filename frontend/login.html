@@ -84,18 +84,16 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
-      // If already logged in, redirect to home
+      // If already logged in, redirect appropriately
       const status = await TNAuth.getStatus();
       if (status && status.authenticated) {
-        window.location.href = "index.html";
+        const urlParams = new URLSearchParams(window.location.search);
+        const redirect = urlParams.get("redirect");
+        window.location.href = redirect || "index.html";
         return;
       }
 
-      let isRegisterMode = false;
-      const titleEl = document.getElementById("auth-title");
-      const subEl = document.getElementById("auth-subtitle");
       const submitBtn = document.getElementById("submit-auth-btn");
-      const toggleBtn = document.getElementById("toggle-mode-btn");
       const message = document.getElementById("auth-message");
       const form = document.getElementById("auth-form");
 
@@ -103,9 +101,9 @@
       const urlParams = new URLSearchParams(window.location.search);
       const errParam = urlParams.get("error");
       if (errParam === "oauth_not_configured") {
-        showError("Google OAuth credentials are not configured in your .env file yet. You can sign in using Username and Password below.");
+        showMessage("Google OAuth credentials are not configured yet. Sign in using Username and Password below.", "error");
       } else if (errParam === "oauth_failed" || errParam === "access_denied") {
-        showError("Google sign-in was blocked or cancelled. Make sure your email is added as a Test User in Google Cloud Console, or sign in below with username/password.");
+        showMessage("Google sign-in was blocked or cancelled. Make sure your email is added as a Test User in Google Cloud Console, or sign in below with username/password.", "error");
       }
 
       // Google Sign-in
@@ -113,26 +111,7 @@
         window.location.href = `${TNOne.API_BASE}/api/auth/login`;
       });
 
-      // Toggle Register / Login
-      toggleBtn.addEventListener("click", () => {
-        isRegisterMode = !isRegisterMode;
-        message.style.display = "none";
-        if (isRegisterMode) {
-          titleEl.textContent = "Create an account";
-          subEl.textContent = "Join THE TN ONE community to add and update bus schedules across Tamil Nadu.";
-          submitBtn.textContent = "Create account";
-          toggleLabel.textContent = "Already have an account?";
-          toggleBtn.textContent = "Sign in";
-        } else {
-          titleEl.textContent = "Welcome back";
-          subEl.textContent = "Sign in to report buses, save routes, and contribute to your local transit community.";
-          submitBtn.textContent = "Sign in";
-          toggleLabel.textContent = "Don't have an account?";
-          toggleBtn.textContent = "Create account";
-        }
-      });
-
-      // Submit Form
+      // Submit Login Form
       form.addEventListener("submit", async (e) => {
         e.preventDefault();
         message.style.display = "none";
@@ -141,28 +120,28 @@
         const password = document.getElementById("password").value;
 
         if (!username || !password) {
-          showError("Please enter your username and password.");
+          showMessage("Please enter your username and password.", "error");
           return;
         }
 
         submitBtn.disabled = true;
-        submitBtn.textContent = isRegisterMode ? "Creating account..." : "Signing in...";
-
-        const endpoint = isRegisterMode ? "/api/auth/register" : "/api/auth/password";
+        submitBtn.textContent = "Signing in...";
 
         try {
-          await TNOne.post(endpoint, { username, password });
-          window.location.href = "index.html";
+          await TNOne.post("/api/auth/password", { username, password });
+          // Redirect to original page if specified, else home
+          const redirect = urlParams.get("redirect");
+          window.location.href = redirect || "index.html";
         } catch (err) {
-          showError(err.message || "Authentication failed. Please check your credentials.");
+          showMessage(err.message || "Invalid username or password. Please try again.", "error");
           submitBtn.disabled = false;
-          submitBtn.textContent = isRegisterMode ? "Create account" : "Sign in";
+          submitBtn.textContent = "Sign in";
         }
       });
 
-      function showError(text) {
+      function showMessage(text, type = "error") {
         message.textContent = text;
-        message.className = "alert alert-error";
+        message.className = `alert alert-${type}`;
         message.style.display = "block";
       }
     });

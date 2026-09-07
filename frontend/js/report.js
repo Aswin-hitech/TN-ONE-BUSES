@@ -201,14 +201,23 @@ document.addEventListener("DOMContentLoaded", async () => {
     renderPhotoPreviews();
   });
 
+  let objectUrls = [];
+
   function renderPhotoPreviews() {
+    // Revoke previous URLs to avoid memory leaks
+    objectUrls.forEach(url => URL.revokeObjectURL(url));
+    objectUrls = [];
+
     photoPreviews.innerHTML = "";
     selectedFiles.forEach((file, index) => {
       const item = document.createElement("div");
       item.className = "preview-item";
 
+      const url = URL.createObjectURL(file);
+      objectUrls.push(url);
+
       const img = document.createElement("img");
-      img.src = URL.createObjectURL(file);
+      img.src = url;
       item.appendChild(img);
 
       const removeBtn = document.createElement("button");
@@ -224,6 +233,11 @@ document.addEventListener("DOMContentLoaded", async () => {
 
       photoPreviews.appendChild(item);
     });
+  }
+
+  function escapeHtml(str) {
+    if (!str) return "";
+    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
   }
 
   // Form Submission
@@ -321,8 +335,11 @@ document.addEventListener("DOMContentLoaded", async () => {
       boarding_stop: boardingStop,
       destination_stop: destinationStop,
       boarding_time: boardingDate.toISOString(),
+      bus_fare: fare,
+      bus_timings: uniqueTimings.join(", "),
       spots: spots,
       stop_timings: JSON.stringify(spots),
+      photos: uploadedUrls,
       notes: `Fare: ₹${fare}. Route: ${spots.map(s => s.stop + (s.time ? ` (${s.time})` : "")).join(" → ")}`,
     };
 
@@ -391,7 +408,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             return;
           }
           list.innerHTML = stops
-            .map((s) => `<div class="autocomplete-item" data-name="${s.stop_name}">${s.stop_name}</div>`)
+            .map((s) => `<div class="autocomplete-item" data-name="${escapeHtml(s.stop_name)}">${escapeHtml(s.stop_name)}</div>`)
             .join("");
           list.classList.add("active");
         } catch (_) {
@@ -411,4 +428,5 @@ document.addEventListener("DOMContentLoaded", async () => {
       if (!wrap.contains(e.target)) list.classList.remove("active");
     });
   }
+
 });

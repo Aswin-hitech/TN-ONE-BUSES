@@ -9,6 +9,15 @@ from app.utils.time_utils import utcnow
 
 MAX_RESULTS = 30
 
+# Bus timings are stored and displayed in IST (Asia/Kolkata = UTC+5:30).
+# The server may be in UTC, so we always work in IST for "next bus" calculations.
+IST = timezone(timedelta(hours=5, minutes=30))
+
+
+def _now_ist() -> datetime:
+    """Returns current time as an IST-aware datetime."""
+    return datetime.now(IST)
+
 
 def _parse_time_to_minutes(time_str: str) -> int:
     """Converts '06:20 PM' or '18:20' to minutes from midnight."""
@@ -219,7 +228,7 @@ def _serialize_bus_result(bus: Bus, now_dt: datetime, from_name: str = None, to_
 
 
 def search_all() -> dict:
-    now = utcnow()
+    now = _now_ist()
     all_buses = Bus.query.all()
     results = [_serialize_bus_result(b, now) for b in all_buses]
     results.sort(
@@ -241,7 +250,7 @@ def search_all() -> dict:
 
 
 def search_by_origin(origin_query: str) -> dict:
-    now = utcnow()
+    now = _now_ist()
     if not origin_query or not origin_query.strip():
         return search_all()
 
@@ -293,7 +302,7 @@ def search_by_origin(origin_query: str) -> dict:
 
 
 def search_by_destination(destination_query: str) -> dict:
-    now = utcnow()
+    now = _now_ist()
     if not destination_query or not destination_query.strip():
         return search_all()
 
@@ -339,7 +348,7 @@ def search_by_destination(destination_query: str) -> dict:
 
 
 def search_from_to(origin_query: str, destination_query: str) -> dict:
-    now = utcnow()
+    now = _now_ist()
     if not origin_query and not destination_query:
         return search_all()
     if not origin_query:
