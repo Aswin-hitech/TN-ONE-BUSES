@@ -32,6 +32,9 @@ document.addEventListener("DOMContentLoaded", async () => {
   const form = document.getElementById("edit-bus-form");
   const editAlert = document.getElementById("edit-alert");
   const submitBtn = document.getElementById("save-edit-btn");
+  const requestSentPanel = document.getElementById("request-sent-panel");
+  const requestResultTitle = document.getElementById("request-result-title");
+  const requestResultDesc = document.getElementById("request-result-desc");
 
   const nameInput = document.getElementById("edit-bus-name");
   const numInput = document.getElementById("edit-bus-number");
@@ -53,6 +56,18 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   function hideAlert() {
     editAlert.style.display = "none";
+  }
+
+  function showRequestSentPanel(autoApplied) {
+    form.style.display = "none";
+    if (autoApplied) {
+      requestResultTitle.textContent = "Changes Saved!";
+      requestResultDesc.textContent = "Your changes have been applied to the route immediately.";
+    } else {
+      requestResultTitle.textContent = "Request Sent!";
+      requestResultDesc.textContent = "Your suggested changes have been sent to the route owner for review. They will appear once approved.";
+    }
+    requestSentPanel.style.display = "block";
   }
 
   // Load Bus Data
@@ -90,14 +105,15 @@ document.addEventListener("DOMContentLoaded", async () => {
     alert("Could not load bus details: " + err.message);
   }
 
-  // Submit Edit
+  // Submit — POST to /api/change-requests instead of PUT
   form.addEventListener("submit", async (e) => {
     e.preventDefault();
     hideAlert();
     submitBtn.disabled = true;
-    submitBtn.textContent = "Saving...";
+    submitBtn.textContent = "Sending...";
 
     const payload = {
+      bus_id: parseInt(busId, 10),
       bus_name: nameInput.value.trim(),
       bus_number: numInput.value.trim() || null,
       bus_type: typeSelect.value,
@@ -111,15 +127,12 @@ document.addEventListener("DOMContentLoaded", async () => {
     };
 
     try {
-      await TNOne.put(`/api/buses/${busId}`, payload);
-      showAlert("Changes saved successfully!", false);
-      setTimeout(() => {
-        history.back();
-      }, 1000);
+      const res = await TNOne.post(`/api/change-requests`, payload);
+      showRequestSentPanel(res.data && res.data.auto_applied);
     } catch (err) {
-      showAlert(err.message || "Failed to update bus details.");
+      showAlert(err.message || "Failed to submit change request.");
       submitBtn.disabled = false;
-      submitBtn.textContent = "Save Changes";
+      submitBtn.textContent = "Request Change";
     }
   });
 });

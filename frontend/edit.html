@@ -28,10 +28,20 @@
     <div id="edit-form-card" class="card" style="display:none; max-width:600px; margin: 24px auto;">
       <div class="card-header">
         <h2 class="card-title">✏️ Edit Bus Route</h2>
-        <p class="card-subtitle">Anyone can collaboratively edit route timings and stops to keep the information accurate for everyone.</p>
+        <p class="card-subtitle">Make your suggested changes below. If you're not the route owner, a request will be sent to them for review.</p>
       </div>
 
       <div class="card-body">
+        <!-- Post-submission success panel -->
+        <div id="request-sent-panel" style="display:none; text-align:center; padding:40px 20px;">
+          <div style="font-size:40px; margin-bottom:12px;">📬</div>
+          <h3 style="font-size:18px; font-weight:800; color:var(--color-text); margin-bottom:8px;" id="request-result-title">Request Sent!</h3>
+          <p style="font-size:14px; color:var(--color-text-secondary); margin-bottom:20px;" id="request-result-desc">
+            Your suggested changes have been sent to the route owner for review.
+          </p>
+          <button type="button" onclick="history.back()" class="btn-secondary" style="height:40px; padding:0 20px;">← Back</button>
+        </div>
+
         <div id="loading-state" style="text-align:center; padding:40px;">
            <div class="loading-spinner"></div>
            <p style="margin-top:12px; color:var(--color-text-secondary);">Loading bus details...</p>
@@ -107,12 +117,13 @@
 
           <div style="display:flex; justify-content:flex-end; gap:10px;">
             <button type="button" onclick="history.back()" class="btn-secondary" style="height:42px; padding:0 16px;">Cancel</button>
-            <button type="submit" id="save-edit-btn" class="btn-primary" style="height:42px; padding:0 20px;">Save Changes</button>
+            <button type="submit" id="save-edit-btn" class="btn-primary" style="height:42px; padding:0 20px;">Request Change</button>
           </div>
         </form>
       </div>
     </div>
   </main>
+
 
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>

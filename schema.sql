@@ -55,6 +55,24 @@ CREATE INDEX IF NOT EXISTS idx_buses_destination ON buses(destination_stop);
 CREATE INDEX IF NOT EXISTS idx_buses_type ON buses(bus_type);
 CREATE INDEX IF NOT EXISTS idx_buses_name ON buses(bus_name);
 
+
+-- 3. CHANGE REQUESTS TABLE
+-- Stores pending edit proposals submitted by non-owners.
+-- The bus owner can accept (apply) or reject each request.
+CREATE TABLE IF NOT EXISTS change_requests (
+    id SERIAL PRIMARY KEY,
+    bus_id INTEGER NOT NULL REFERENCES buses(id) ON DELETE CASCADE,
+    requester_id INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+    status VARCHAR(20) NOT NULL DEFAULT 'pending',  -- 'pending' | 'accepted' | 'rejected'
+    payload TEXT NOT NULL,                           -- JSON blob of the proposed field values
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    updated_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+);
+
+CREATE INDEX IF NOT EXISTS idx_change_requests_bus_id ON change_requests(bus_id);
+CREATE INDEX IF NOT EXISTS idx_change_requests_requester_id ON change_requests(requester_id);
+CREATE INDEX IF NOT EXISTS idx_change_requests_status ON change_requests(status);
+
 -- =======================================================
 -- SAMPLE SQL INSERTS (Copy & run to insert buses manually)
 -- =======================================================

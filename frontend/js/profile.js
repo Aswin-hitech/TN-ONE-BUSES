@@ -324,4 +324,151 @@ document.addEventListener("DOMContentLoaded", async () => {
 
   // Load contributions
   loadUserContributions();
+
+  // ── Change Requests Inbox ──────────────────────────────────────────────────
+
+  const crSection = document.getElementById("change-requests-section");
+  const crContainer = document.getElementById("change-requests-container");
+  const crBadge = document.getElementById("cr-badge");
+
+  async function loadChangeRequests() {
+    try {
+      const res = await TNOne.get("/api/change-requests/pending");
+      const requests = res.data || [];
+
+      if (requests.length === 0) {
+        if (crSection) crSection.style.display = "none";
+        return;
+      }
+
+      if (crSection) crSection.style.display = "block";
+      if (crBadge) crBadge.textContent = requests.length;
+      renderChangeRequestCards(requests);
+    } catch (_) {
+      // User may have no owned buses — silently hide
+      if (crSection) crSection.style.display = "none";
+    }
+  }
+
+  function renderChangeRequestCards(requests) {
+    const FIELD_LABELS = {
+      bus_name: "Bus Name",
+      bus_number: "Bus Number",
+      bus_type: "Bus Type",
+      operator: "Operator",
+      start_stop: "From (Start)",
+      destination_stop: "To (Destination)",
+      stop_timings: "Spots & Timings",
+      boarded_stops: "Via Stops",
+      bus_timings: "Bus Timings",
+      bus_fare: "Fare (₹)",
+    };
+
+    const html = requests.map((cr) => {
+      const busName = escapeHtml((cr.bus && cr.bus.bus_name) || `Bus #${cr.bus_id}`);
+      const requesterName = escapeHtml((cr.requester && cr.requester.name) || "Someone");
+      const dateStr = cr.created_at
+        ? new Date(cr.created_at).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })
+        : "";
+
+      // Build diff rows from payload
+      const payload = cr.payload || {};
+      const diffRows = Object.entries(payload)
+        .filter(([k]) => FIELD_LABELS[k])
+        .map(([k, v]) => {
+          const label = FIELD_LABELS[k] || k;
+          const val = Array.isArray(v) ? v.join(", ") : String(v ?? "");
+          return `<div style="display:flex; gap:8px; align-items:baseline; font-size:13px; padding:4px 0; border-bottom:1px solid var(--color-border-light);">
+            <span style="font-weight:700; color:var(--color-text-secondary); min-width:120px;">${escapeHtml(label)}</span>
+            <span style="color:var(--color-text);">${escapeHtml(val)}</span>
+          </div>`;
+        }).join("");
+
+      return `
+        <div class="bus-card" id="cr-card-${cr.id}" style="margin-bottom:12px;">
+          <div class="bus-card-top">
+            <div class="bus-identity">
+              <div class="bus-name-row">
+                <span class="bus-name">🚌 ${busName}</span>
+              </div>
+              <div style="font-size:12px; color:var(--color-text-secondary); margin-top:2px;">
+                Suggested by <strong>${requesterName}</strong> · ${dateStr}
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:10px; padding:8px; background:var(--color-surface); border-radius:var(--radius-sm); border:1px solid var(--color-border-light);">
+            <div style="font-size:11px; font-weight:700; color:var(--color-text-secondary); margin-bottom:6px;">PROPOSED CHANGES</div>
+            ${diffRows || '<span style="font-size:12px; color:var(--color-text-secondary);">No field changes detected.</span>'}
+          </div>
+
+          <div id="cr-alert-${cr.id}" class="alert" style="display:none; margin-top:8px;"></div>
+
+          <div style="display:flex; justify-content:flex-end; gap:10px; margin-top:10px; padding-top:8px; border-top:1px solid var(--color-border-light);">
+            <button type="button" class="btn-secondary cr-reject-btn" data-id="${cr.id}" style="padding:4px 14px; font-size:13px; height:34px;">
+              ✗ Reject
+            </button>
+            <button type="button" class="btn-primary cr-accept-btn" data-id="${cr.id}" style="padding:4px 14px; font-size:13px; height:34px;">
+              ✓ Accept
+            </button>
+          </div>
+        </div>`;
+    }).join("");
+
+    crContainer.innerHTML = html;
+
+    // Wire up accept buttons
+    crContainer.querySelectorAll(".cr-accept-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const crId = btn.getAttribute("data-id");
+        await handleCrAction(crId, "accept", btn);
+      });
+    });
+
+    // Wire up reject buttons
+    crContainer.querySelectorAll(".cr-reject-btn").forEach((btn) => {
+      btn.addEventListener("click", async () => {
+        const crId = btn.getAttribute("data-id");
+        await handleCrAction(crId, "reject", btn);
+      });
+    });
+  }
+
+  async function handleCrAction(crId, action, triggerBtn) {
+    const card = document.getElementById(`cr-card-${crId}`);
+    const alertEl = document.getElementById(`cr-alert-${crId}`);
+    const allBtns = card.querySelectorAll("button");
+
+    allBtns.forEach(b => b.disabled = true);
+    triggerBtn.textContent = action === "accept" ? "Accepting..." : "Rejecting...";
+
+    try {
+      await TNOne.post(`/api/change-requests/${crId}/${action}`);
+
+      // Animate card out
+      card.style.opacity = "0";
+      card.style.transition = "opacity 0.3s";
+      setTimeout(() => {
+        card.remove();
+
+        // Update badge
+        const remaining = crContainer.querySelectorAll(".bus-card").length;
+        if (crBadge) crBadge.textContent = remaining;
+        if (remaining === 0 && crSection) crSection.style.display = "none";
+
+        // Reload contributions if accepted (bus data changed)
+        if (action === "accept") loadUserContributions();
+      }, 350);
+    } catch (err) {
+      if (alertEl) {
+        alertEl.className = "alert alert-error";
+        alertEl.textContent = err.message || "Action failed. Please try again.";
+        alertEl.style.display = "block";
+      }
+      allBtns.forEach(b => b.disabled = false);
+      triggerBtn.textContent = action === "accept" ? "✓ Accept" : "✗ Reject";
+    }
+  }
+
+  loadChangeRequests();
 });

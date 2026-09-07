@@ -67,7 +67,7 @@ def _init_extensions(app):
 
 
 def _register_blueprints(app):
-    from app.blueprints import auth, users, buses, stops, routes, reports, search
+    from app.blueprints import auth, users, buses, stops, routes, reports, search, change_requests
 
     app.register_blueprint(auth.bp)
     app.register_blueprint(users.bp)
@@ -76,6 +76,7 @@ def _register_blueprints(app):
     app.register_blueprint(routes.bp)
     app.register_blueprint(reports.bp)
     app.register_blueprint(search.bp)
+    app.register_blueprint(change_requests.bp)
 
     @app.route("/api/health")
     def health():
