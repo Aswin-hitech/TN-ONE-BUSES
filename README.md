@@ -1,4 +1,4 @@
-# THE TN ONE
+# TN FOR BUS
 
 **Your Community-Powered Bus Information Network**
 
@@ -11,7 +11,7 @@ match reality, and there's no live tracking. Riders are left guessing.
 
 ## Solution
 
-THE TN ONE is a crowdsourced bus information platform. Any rider who boards
+TN FOR BUS is a crowdsourced bus information platform. Any rider who boards
 or observes a bus can report it — bus name/number, boarding stop,
 destination, and boarding time — in under a minute. Other riders can then
 search their destination and immediately see which buses have recently been

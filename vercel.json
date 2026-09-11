@@ -1,11 +1,51 @@
 {
   "version": 2,
+  "cleanUrls": true,
+  "trailingSlash": false,
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" },
+        { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
+        { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=(self)" },
+        { "key": "Strict-Transport-Security", "value": "max-age=63072000; includeSubDomains; preload" },
+        {
+          "key": "Content-Security-Policy",
+          "value": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.openstreetmap.org; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://nominatim.openstreetmap.org https://routing.openstreetmap.de https://*.neon.tech https://accounts.google.com; frame-ancestors 'none';"
+        }
+      ]
+    }
+  ],
   "builds": [
     { "src": "api/index.py", "use": "@vercel/python" },
     { "src": "frontend/**", "use": "@vercel/static" }
   ],
   "routes": [
+    {
+      "src": "/(.*)",
+      "headers": {
+        "X-Content-Type-Options": "nosniff",
+        "X-Frame-Options": "DENY",
+        "X-XSS-Protection": "1; mode=block",
+        "Referrer-Policy": "strict-origin-when-cross-origin",
+        "Permissions-Policy": "camera=(), microphone=(), geolocation=(self)",
+        "Strict-Transport-Security": "max-age=63072000; includeSubDomains; preload",
+        "Content-Security-Policy": "default-src 'self'; script-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline' https://unpkg.com https://cdn.jsdelivr.net https://fonts.googleapis.com; img-src 'self' data: blob: https://*.tile.openstreetmap.org https://*.openstreetmap.org; font-src 'self' https://fonts.gstatic.com; connect-src 'self' https://nominatim.openstreetmap.org https://routing.openstreetmap.de https://*.neon.tech https://accounts.google.com; frame-ancestors 'none';"
+      },
+      "continue": true
+    },
+    { "src": "^/index\\.html$", "status": 308, "headers": { "Location": "/" } },
     { "src": "/api/(.*)", "dest": "/api/index.py" },
+    { "src": "^/$", "dest": "/frontend/index.html" },
+    { "src": "^/search$", "dest": "/frontend/search.html" },
+    { "src": "^/login$", "dest": "/frontend/login.html" },
+    { "src": "^/register$", "dest": "/frontend/register.html" },
+    { "src": "^/report$", "dest": "/frontend/report.html" },
+    { "src": "^/profile$", "dest": "/frontend/profile.html" },
+    { "src": "^/edit$", "dest": "/frontend/edit.html" },
     { "src": "/(.*)", "dest": "/frontend/$1" }
   ]
 }

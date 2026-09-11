@@ -1,5 +1,5 @@
 /**
- * Light / Dark theme switcher for THE TN ONE
+ * Light / Dark theme switcher for TN FOR BUS
  */
 document.addEventListener("DOMContentLoaded", () => {
   const savedTheme = localStorage.getItem("tn-one-theme") || "light";

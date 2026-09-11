@@ -3,14 +3,18 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>THE TN ONE — Community-Powered Bus Network</title>
+  <title>TN FOR BUS — Community-Powered Bus Network</title>
+  <meta name="description" content="Discover bus routes, schedules, and live timings across Tamil Nadu with TN FOR BUS, an independent community transit network." />
+  <meta name="robots" content="index, follow" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/responsive.css" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
 
-  <!-- Leaflet CSS -->
+  <!-- Leaflet CSS (Pinned Stable Versions) -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css" />
 </head>
 
 <body>
@@ -24,7 +28,7 @@
         <div class="brand-area">
           <div class="logo-placeholder">TN</div>
           <div class="brand-text-block">
-            <span class="brand-title">THE TN ONE</span>
+            <span class="brand-title">TN FOR BUS</span>
             <span class="brand-tagline">Community-Powered Bus Network</span>
           </div>
         </div>
@@ -110,13 +114,16 @@
           <a id="panel-add-bus-btn" href="report.html" class="btn-primary" style="padding: 10px 16px; font-size: 14px;">
             ＋ Add Bus for this route
           </a>
+          <div style="margin-top: 8px; text-align: center; font-size: 10px; color: var(--color-text-secondary); opacity: 0.85;">
+            TN FOR BUS is a community-driven transit directory. Not affiliated with TNSTC, SETC, or the Govt. of Tamil Nadu.
+          </div>
         </div>
       </div>
     </div>
 
     <!-- BOTTOM NAVIGATION -->
     <nav class="bottom-nav">
-      <a class="nav-item active" href="index.html">
+      <a class="nav-item active" href="/">
         <span class="nav-icon">⌂</span>
         <span>Home</span>
       </a>
@@ -183,13 +190,13 @@
     </div>
   </div>
 
-  <!-- Scripts -->
+  <!-- Scripts (Pinned Stable Versions) -->
   <script src="js/api.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/theme.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
-  <script src="https://unpkg.com/leaflet-control-geocoder/dist/Control.Geocoder.js"></script>
+  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
+  <script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js"></script>
 
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
@@ -785,11 +792,12 @@
             const lng = pos.coords.longitude;
             map.setView([lat, lng], 14);
 
-            const customIcon = L.icon({
-              iconUrl: 'https://static.vecteezy.com/system/resources/thumbnails/055/364/763/small/a-black-silhouette-of-a-man-standing-icon-isolated-free-png.png',
-              iconSize: [40, 40], // size of the icon
-              iconAnchor: [20, 40], // point of the icon which will correspond to marker's location
-              popupAnchor: [0, -40] // point from which the popup should open relative to the iconAnchor
+            const customIcon = L.divIcon({
+              className: 'user-location-marker-pin',
+              html: `<div style="width:34px; height:34px; background:#0B6E4F; border:3px solid #ffffff; border-radius:50%; box-shadow:0 3px 8px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; font-size:16px;">📍</div>`,
+              iconSize: [34, 34],
+              iconAnchor: [17, 34],
+              popupAnchor: [0, -34]
             });
 
             if (userMarker) map.removeLayer(userMarker);
@@ -1064,7 +1072,12 @@
 
       function escapeHtml(str) {
         if (!str) return "";
-        return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+        return String(str)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;")
+          .replace(/'/g, "&#39;");
       }
     });
   </script>

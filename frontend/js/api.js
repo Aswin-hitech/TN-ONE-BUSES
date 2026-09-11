@@ -1,5 +1,5 @@
 /**
- * Thin fetch wrapper for THE TN ONE backend API.
+ * Thin fetch wrapper for TN FOR BUS backend API.
  * Centralizes the base URL, credentials handling, and error normalization
  * so every page/module talks to the API the same way.
  */
@@ -7,6 +7,7 @@ const TNOne = (() => {
   // If explicitly set, use that; if running from a web server (e.g. http://localhost:5000, 127.0.0.1:5000, or deployed),
   // use the window's origin. If running on a different port like 8080 or file://, fallback to http://localhost:5000.
   const getApiBase = () => {
+    if (window.TN_FOR_BUS_API_BASE) return window.TN_FOR_BUS_API_BASE;
     if (window.TN_ONE_API_BASE) return window.TN_ONE_API_BASE;
     if (window.location && window.location.origin && window.location.origin.startsWith("http")) {
       return window.location.origin;

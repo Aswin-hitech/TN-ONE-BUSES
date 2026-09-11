@@ -80,12 +80,18 @@ def password_login():
         return fail("Login failed. Please try again.", 500)
 
 
+def _frontend_url(path: str = "") -> str:
+    origin = (current_app.config.get("FRONTEND_ORIGIN") or "").strip().rstrip("/")
+    normalized_path = "/" + path.lstrip("/") if path else "/"
+    return f"{origin}{normalized_path}" if origin else normalized_path
+
+
 @bp.route("/login")
 def login():
     client_id = current_app.config.get("GOOGLE_CLIENT_ID")
     client_secret = current_app.config.get("GOOGLE_CLIENT_SECRET")
     if not client_id or not client_secret:
-        return redirect(f"{current_app.config.get('FRONTEND_ORIGIN', '/')}/login.html?error=oauth_not_configured")
+        return redirect(_frontend_url("/login?error=oauth_not_configured"))
 
     redirect_uri = current_app.config["GOOGLE_REDIRECT_URI"]
     return auth_service.get_google_authorize_redirect(redirect_uri)
@@ -97,12 +103,11 @@ def callback():
         user = auth_service.handle_google_callback()
     except Exception as e:
         current_app.logger.exception("Google OAuth callback failed")
-        frontend_origin = current_app.config.get("FRONTEND_ORIGIN", "/")
-        return redirect(f"{frontend_origin}/login.html?error=oauth_failed")
+        return redirect(_frontend_url("/login?error=oauth_failed"))
 
     login_user(user, remember=True)
-    frontend_origin = current_app.config.get("FRONTEND_ORIGIN", "/")
-    return redirect(f"{frontend_origin}/index.html")
+    return redirect(_frontend_url("/"))
+
 
 
 @bp.route("/logout", methods=["POST"])

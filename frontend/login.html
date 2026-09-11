@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Sign in — THE TN ONE</title>
+  <title>Sign in — TN FOR BUS</title>
+  <meta name="description" content="Sign in to TN FOR BUS, an independent community transit network for bus routes and timings across Tamil Nadu." />
+  <meta name="robots" content="index, follow" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/responsive.css" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
@@ -13,8 +16,8 @@
   <div class="auth-container">
     <!-- BRANDING -->
     <div style="display:flex; flex-direction:column; align-items:center; text-align:center; margin-bottom:24px;">
-      <a href="index.html" class="logo-placeholder" style="width:56px; height:56px; font-size:20px; margin-bottom:12px;">TN</a>
-      <span class="brand-title" style="font-size:24px;">THE TN ONE</span>
+      <a href="/" class="logo-placeholder" style="width:56px; height:56px; font-size:20px; margin-bottom:12px;">TN</a>
+      <span class="brand-title" style="font-size:24px;">TN FOR BUS</span>
       <span class="brand-tagline">Community-Powered Bus Network</span>
     </div>
 
@@ -71,9 +74,12 @@
       </div>
     </div>
 
-    <!-- BACK LINK -->
+    <!-- BACK LINK & DISCLAIMER -->
     <div style="text-align:center; margin-top:20px;">
-      <a href="index.html" class="btn-text" style="color:var(--color-text-secondary);">← Continue to map without signing in</a>
+      <a href="/" class="btn-text" style="color:var(--color-text-secondary);">← Continue to map without signing in</a>
+      <p style="margin-top:20px; font-size:11px; line-height:1.5; color:var(--color-text-secondary); opacity:0.85; max-width:380px; margin-left:auto; margin-right:auto;">
+        <strong>Disclaimer:</strong> TN FOR BUS is an independent community transit platform. It is not affiliated with, sponsored by, or endorsed by TNSTC, SETC, or any government agency.
+      </p>
     </div>
   </div>
 
@@ -84,12 +90,24 @@
 
   <script>
     document.addEventListener("DOMContentLoaded", async () => {
-      // If already logged in, redirect appropriately
+      // Validate redirect parameter to prevent DOM Open Redirect vulnerabilities
+      function getSafeRedirect(raw) {
+        if (!raw || typeof raw !== "string") return "/";
+        const trimmed = raw.trim();
+        // Allow strictly local relative paths starting with single '/', disallowing '//', 'javascript:', etc.
+        if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.includes("://") && !trimmed.toLowerCase().startsWith("javascript:") && !trimmed.toLowerCase().startsWith("data:")) {
+          return trimmed;
+        }
+        return "/";
+      }
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const safeRedirect = getSafeRedirect(urlParams.get("redirect"));
+
+      // If already logged in, redirect safely
       const status = await TNAuth.getStatus();
       if (status && status.authenticated) {
-        const urlParams = new URLSearchParams(window.location.search);
-        const redirect = urlParams.get("redirect");
-        window.location.href = redirect || "index.html";
+        window.location.href = safeRedirect;
         return;
       }
 
@@ -98,7 +116,6 @@
       const form = document.getElementById("auth-form");
 
       // Check URL parameters for OAuth errors
-      const urlParams = new URLSearchParams(window.location.search);
       const errParam = urlParams.get("error");
       if (errParam === "oauth_not_configured") {
         showMessage("Google OAuth credentials are not configured yet. Sign in using Username and Password below.", "error");
@@ -129,9 +146,7 @@
 
         try {
           await TNOne.post("/api/auth/password", { username, password });
-          // Redirect to original page if specified, else home
-          const redirect = urlParams.get("redirect");
-          window.location.href = redirect || "index.html";
+          window.location.href = safeRedirect;
         } catch (err) {
           showMessage(err.message || "Invalid username or password. Please try again.", "error");
           submitBtn.disabled = false;

@@ -24,7 +24,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   const busId = urlParams.get("id");
   if (!busId) {
     alert("No Bus ID provided.");
-    window.location.href = "index.html";
+    window.location.href = "/";
     return;
   }
 

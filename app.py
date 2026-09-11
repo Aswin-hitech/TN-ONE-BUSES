@@ -2,7 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-from flask import send_from_directory
+from flask import send_from_directory, redirect
 
 from dotenv import load_dotenv
 
@@ -31,29 +31,46 @@ def index():
     return send_from_directory(str(FRONTEND_DIR), "index.html")
 
 
+@app.route("/index.html")
+def redirect_index():
+    return redirect("/", code=301)
+
+
+@app.route("/login")
 @app.route("/login.html")
 def login_page():
     return send_from_directory(str(FRONTEND_DIR), "login.html")
 
 
+@app.route("/register")
 @app.route("/register.html")
 def register_page():
     return send_from_directory(str(FRONTEND_DIR), "register.html")
 
 
+@app.route("/search")
 @app.route("/search.html")
 def search_page():
     return send_from_directory(str(FRONTEND_DIR), "search.html")
 
 
+@app.route("/report")
 @app.route("/report.html")
 def report_page():
     return send_from_directory(str(FRONTEND_DIR), "report.html")
 
 
+@app.route("/profile")
 @app.route("/profile.html")
 def profile_page():
     return send_from_directory(str(FRONTEND_DIR), "profile.html")
+
+
+@app.route("/edit")
+@app.route("/edit.html")
+def edit_page():
+    return send_from_directory(str(FRONTEND_DIR), "edit.html")
+
 
 
 @app.route("/<path:filename>")

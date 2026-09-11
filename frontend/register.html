@@ -3,7 +3,10 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Register — THE TN ONE</title>
+  <title>Register — TN FOR BUS</title>
+  <meta name="description" content="Create an account on TN FOR BUS community transit platform for Tamil Nadu bus routes and timings." />
+  <meta name="robots" content="index, follow" />
+  <meta name="referrer" content="strict-origin-when-cross-origin" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/responsive.css" />
   <link rel="icon" href="favicon.ico" type="image/x-icon" />
@@ -128,14 +131,14 @@
     <div class="register-card">
       <!-- TOP BAR WITH THEME CONTROLS AT TOP OF BOX -->
       <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-        <a href="index.html" class="logo-placeholder" style="width:40px; height:40px; font-size:15px;">TN</a>
+        <a href="/" class="logo-placeholder" style="width:40px; height:40px; font-size:15px;">TN</a>
         <div class="theme-mount"></div>
       </div>
 
       <!-- HEADER -->
       <div class="register-header" style="margin-bottom: 24px;">
         <h1>Register</h1>
-        <p>Create your account on THE TN ONE</p>
+        <p>Create your account on TN FOR BUS</p>
       </div>
 
       <!-- INLINE ALERT -->
@@ -180,9 +183,12 @@
       </div>
     </div>
 
-    <!-- BACK TO MAP LINK -->
+    <!-- BACK TO MAP LINK & DISCLAIMER -->
     <div style="text-align:center; margin-top:20px;">
-      <a href="index.html" class="btn-text" style="color:var(--color-text-secondary); font-size:13px;">← Back to Map</a>
+      <a href="/" class="btn-text" style="color:var(--color-text-secondary); font-size:13px;">← Back to Map</a>
+      <p style="margin-top:20px; font-size:11px; line-height:1.5; color:var(--color-text-secondary); opacity:0.85; max-width:380px; margin-left:auto; margin-right:auto;">
+        <strong>Disclaimer:</strong> TN FOR BUS is an independent community transit directory and is not affiliated with, authorized, or endorsed by TNSTC, SETC, or the Government of Tamil Nadu.
+      </p>
     </div>
   </div>
 
@@ -196,7 +202,7 @@
       // If already logged in, redirect to home
       const status = await TNAuth.getStatus();
       if (status && status.authenticated) {
-        window.location.href = "index.html";
+        window.location.href = "/";
         return;
       }
 
@@ -255,7 +261,7 @@
 
           showAlert("Registration successful! Redirecting to map...", "success");
           setTimeout(() => {
-            window.location.href = "index.html";
+            window.location.href = "/";
           }, 800);
         } catch (err) {
           showAlert(err.message || "Registration failed. Please try again.", "error");

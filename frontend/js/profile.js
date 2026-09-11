@@ -66,7 +66,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     try {
       await TNOne.post("/api/auth/logout");
     } catch (_) {}
-    window.location.href = "index.html";
+    window.location.href = "/";
   });
 
   let userBuses = [];
