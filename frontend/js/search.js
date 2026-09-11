@@ -118,7 +118,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     const auth = await TNAuth.getStatus();
     if (!auth.authenticated) {
       alert("Please log in to add a stop to this bus route.");
-      window.location.href = "login.html?redirect=" + encodeURIComponent(window.location.href);
+      window.location.href = "/login?redirect=" + encodeURIComponent(window.location.href);
       return;
     }
 
@@ -323,7 +323,7 @@ document.addEventListener("DOMContentLoaded", async () => {
             <div class="state-icon">🚌</div>
             <p class="state-title">No buses registered yet</p>
             <p class="state-desc">Be the first to add one and help travelers across Tamil Nadu.</p>
-            <a href="report.html" class="btn-primary" style="display:inline-flex; width:auto;">
+            <a href="/report" class="btn-primary" style="display:inline-flex; width:auto;">
               ＋ Add Bus
             </a>
           </div>`;
@@ -335,7 +335,7 @@ document.addEventListener("DOMContentLoaded", async () => {
     }
 
     // Case 2: Filtered / sorted by origin or route
-    const addBusUrl = `report.html?${from ? "from=" + encodeURIComponent(from) + "&" : ""}${to ? "to=" + encodeURIComponent(to) : ""}`;
+    const addBusUrl = `/report?${from ? "from=" + encodeURIComponent(from) + "&" : ""}${to ? "to=" + encodeURIComponent(to) : ""}`;
 
     if (results && results.length > 0) {
       const label = (from && to)
@@ -433,7 +433,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${safeBusId}">
                 ➕ Add Stop
               </button>
-              <a href="edit.html?id=${safeBusId}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
+              <a href="/edit?id=${safeBusId}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
                 ✏️ Edit Details
               </a>
             </div>
@@ -454,7 +454,7 @@ document.addEventListener("DOMContentLoaded", async () => {
               <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${safeBusId}">
                 ➕ Add Stop
               </button>
-              <a href="edit.html?id=${safeBusId}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
+              <a href="/edit?id=${safeBusId}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
                 ✏️ Edit Details
               </a>
             </div>

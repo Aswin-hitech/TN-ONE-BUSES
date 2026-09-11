@@ -70,14 +70,17 @@
       <!-- LINK TO DEDICATED REGISTRATION PAGE -->
       <div class="auth-toggle-row">
         <span>Don't have an account?</span>
-        <a href="register.html" class="auth-toggle-btn" style="text-decoration:none;">Create account</a>
+        <a href="/register" class="auth-toggle-btn" style="text-decoration:none;">Create account</a>
       </div>
     </div>
 
     <!-- BACK LINK & DISCLAIMER -->
     <div style="text-align:center; margin-top:20px;">
       <a href="/" class="btn-text" style="color:var(--color-text-secondary);">← Continue to map without signing in</a>
-      <p style="margin-top:20px; font-size:11px; line-height:1.5; color:var(--color-text-secondary); opacity:0.85; max-width:380px; margin-left:auto; margin-right:auto;">
+      <div style="margin-top:12px;">
+        <a href="/about" class="btn-text" style="font-size:12px; color:var(--color-primary); font-weight:600;">About &amp; Disclaimer</a>
+      </div>
+      <p style="margin-top:16px; font-size:11px; line-height:1.5; color:var(--color-text-secondary); opacity:0.85; max-width:380px; margin-left:auto; margin-right:auto;">
         <strong>Disclaimer:</strong> TN FOR BUS is an independent community transit platform. It is not affiliated with, sponsored by, or endorsed by TNSTC, SETC, or any government agency.
       </p>
     </div>
@@ -94,8 +97,8 @@
       function getSafeRedirect(raw) {
         if (!raw || typeof raw !== "string") return "/";
         const trimmed = raw.trim();
-        // Allow strictly local relative paths starting with single '/', disallowing '//', 'javascript:', etc.
-        if (trimmed.startsWith("/") && !trimmed.startsWith("//") && !trimmed.includes("://") && !trimmed.toLowerCase().startsWith("javascript:") && !trimmed.toLowerCase().startsWith("data:")) {
+        // Allow strictly local relative paths starting with single '/', disallowing '//', '\', 'javascript:', etc.
+        if (/^\/[^\/\\]/.test(trimmed) && !trimmed.includes("://") && !/^(javascript|data|vbscript):/i.test(trimmed)) {
           return trimmed;
         }
         return "/";

@@ -3,6 +3,7 @@ from flask_login import current_user
 import requests
 import uuid
 from pydantic import ValidationError
+from werkzeug.utils import secure_filename
 from app.extensions import db
 from app.models.bus import Bus
 from app.schemas.bus import BusCreate
@@ -245,7 +246,8 @@ def upload_photos():
     for photo in files[:8]:
         if not photo.content_type or not photo.content_type.startswith("image/"):
             return fail("Only image files are allowed.", 422)
-        name = f"{current_user.id}/{uuid.uuid4().hex}-{photo.filename.replace(' ', '-')[:80]}"
+        safe_name = secure_filename(photo.filename) or "photo.jpg"
+        name = f"{current_user.id}/{uuid.uuid4().hex}-{safe_name[:80]}"
         target = f"{base.rstrip('/')}/storage/v1/object/{bucket}/{name}"
         response = requests.post(target, headers={"Authorization": f"Bearer {key}", "apikey": key, "Content-Type": photo.content_type}, data=photo.read(), timeout=20)
         if not response.ok: return fail("A photo could not be uploaded.", 502)

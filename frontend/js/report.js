@@ -359,7 +359,7 @@ document.addEventListener("DOMContentLoaded", async () => {
       selectedFiles = [];
       renderPhotoPreviews();
       setTimeout(() => {
-        window.location.href = `search.html?from=${encodeURIComponent(boardingStop)}&to=${encodeURIComponent(destinationStop)}`;
+        window.location.href = `/search?from=${encodeURIComponent(boardingStop)}&to=${encodeURIComponent(destinationStop)}`;
       }, 1500);
     } catch (err) {
       showAlert(err.message || "Failed to add bus. Please try again.", "error");

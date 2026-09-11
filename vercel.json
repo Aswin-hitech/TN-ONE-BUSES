@@ -19,6 +19,13 @@
       "continue": true
     },
     { "src": "/index\\.html", "status": 308, "headers": { "Location": "/" } },
+    { "src": "/search\\.html", "status": 308, "headers": { "Location": "/search" } },
+    { "src": "/login\\.html", "status": 308, "headers": { "Location": "/login" } },
+    { "src": "/register\\.html", "status": 308, "headers": { "Location": "/register" } },
+    { "src": "/report\\.html", "status": 308, "headers": { "Location": "/report" } },
+    { "src": "/profile\\.html", "status": 308, "headers": { "Location": "/profile" } },
+    { "src": "/edit\\.html", "status": 308, "headers": { "Location": "/edit" } },
+    { "src": "/about\\.html", "status": 308, "headers": { "Location": "/about" } },
     { "src": "/api/(.*)", "dest": "/api/index.py" },
     { "src": "/search", "dest": "/frontend/search.html" },
     { "src": "/login", "dest": "/frontend/login.html" },
@@ -26,6 +33,7 @@
     { "src": "/report", "dest": "/frontend/report.html" },
     { "src": "/profile", "dest": "/frontend/profile.html" },
     { "src": "/edit", "dest": "/frontend/edit.html" },
+    { "src": "/about", "dest": "/frontend/about.html" },
     { "src": "/(.*)", "dest": "/frontend/$1" }
   ]
 }

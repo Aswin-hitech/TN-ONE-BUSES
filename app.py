@@ -72,6 +72,12 @@ def edit_page():
     return send_from_directory(str(FRONTEND_DIR), "edit.html")
 
 
+@app.route("/about")
+@app.route("/about.html")
+def about_page():
+    return send_from_directory(str(FRONTEND_DIR), "about.html")
+
+
 
 @app.route("/<path:filename>")
 def frontend_files(filename):

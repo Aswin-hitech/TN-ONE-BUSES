@@ -17,7 +17,7 @@ const TNAuth = (() => {
     container.innerHTML = "";
     if (status && status.authenticated && status.user) {
       const link = document.createElement("a");
-      link.href = "profile.html";
+      link.href = "/profile";
       link.title = "View Profile";
 
       if (status.user.profile_picture) {
@@ -38,7 +38,7 @@ const TNAuth = (() => {
       btn.className = "btn-login";
       btn.textContent = "Sign in";
       btn.onclick = () => {
-        window.location.href = "login.html";
+        window.location.href = "/login";
       };
       container.appendChild(btn);
     }
@@ -53,7 +53,8 @@ const TNAuth = (() => {
 
   async function requireLoginOrRedirect(redirectTo) {
     if (!redirectTo) {
-      redirectTo = "login.html?redirect=" + encodeURIComponent(window.location.href);
+      const localPath = (window.location.pathname || "/") + (window.location.search || "");
+      redirectTo = "/login?redirect=" + encodeURIComponent(localPath);
     }
     const status = await getStatus();
     if (!status.authenticated) {

@@ -9,7 +9,7 @@ document.addEventListener("DOMContentLoaded", async () => {
   TNAuth.renderTopbarAuth(topbarAuth, status);
 
   if (!status || !status.authenticated || !status.user) {
-    window.location.href = "login.html";
+    window.location.href = "/login";
     return;
   }
 

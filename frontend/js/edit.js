@@ -12,7 +12,8 @@ document.addEventListener("DOMContentLoaded", async () => {
     
     // Set redirect to return here
     const loginLink = document.getElementById("login-link");
-    loginLink.href = `login.html?redirect=${encodeURIComponent(window.location.href)}`;
+    const localPath = (window.location.pathname || "/") + (window.location.search || "");
+    loginLink.href = `/login?redirect=${encodeURIComponent(localPath)}`;
     return;
   }
   
