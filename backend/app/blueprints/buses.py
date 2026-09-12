@@ -105,6 +105,13 @@ def update_bus(bus_id):
     if not bus:
         return fail("Bus not found.", 404)
 
+    # Only the bus owner may edit directly; other users must use change requests.
+    if bus.user_id is not None and bus.user_id != current_user.id:
+        return fail(
+            "You do not own this route. Please submit a change request instead.",
+            403,
+        )
+
     data = request.get_json(silent=True) or {}
 
     def _str(val, max_len=255):
@@ -243,9 +250,18 @@ def upload_photos():
     if not base or not key or not files:
         return fail("Photo storage is not configured or no photos were selected.", 422)
     urls = []
+    MAX_PHOTO_BYTES = 5 * 1024 * 1024  # 5 MB per photo
     for photo in files[:8]:
         if not photo.content_type or not photo.content_type.startswith("image/"):
             return fail("Only image files are allowed.", 422)
+
+        # Check file size without reading the whole file into memory at once
+        photo.seek(0, 2)  # seek to end
+        size = photo.tell()
+        photo.seek(0)     # reset to start
+        if size > MAX_PHOTO_BYTES:
+            return fail("Each photo must be under 5 MB.", 413)
+
         safe_name = secure_filename(photo.filename) or "photo.jpg"
         name = f"{current_user.id}/{uuid.uuid4().hex}-{safe_name[:80]}"
         target = f"{base.rstrip('/')}/storage/v1/object/{bucket}/{name}"
@@ -253,6 +269,7 @@ def upload_photos():
         if not response.ok: return fail("A photo could not be uploaded.", 502)
         urls.append(f"{base.rstrip('/')}/storage/v1/object/public/{bucket}/{name}")
     return ok(data={"urls": urls}, message="Photos uploaded.")
+
 
 
 def _first_error(validation_error: ValidationError) -> str:

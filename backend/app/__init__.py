@@ -2,11 +2,18 @@ import logging
 from flask import Flask, jsonify
 from pydantic import ValidationError
 
-from app.config import get_config
+from app.config import get_config, ProductionConfig
 from app.extensions import db, migrate, login_manager, limiter, cors
 
 
 def create_app(config_name: str = None):
+    import os
+    config_name = config_name or os.environ.get("FLASK_ENV", "development")
+
+    # Hard-fail at startup if production is misconfigured
+    if config_name == "production":
+        ProductionConfig._validate()
+
     app = Flask(__name__)
     app.config.from_object(get_config(config_name))
 

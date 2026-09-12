@@ -98,6 +98,30 @@ class ProductionConfig(BaseConfig):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
 
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+
+    @classmethod
+    def _validate(cls):
+        """Called at app startup to hard-fail on unsafe production config."""
+        _WEAK_KEYS = {
+            "",
+            "dev-secret-key-change-me",
+            "change-this-to-a-long-random-string",
+        }
+        secret = os.environ.get("SECRET_KEY", "")
+        if not secret or secret in _WEAK_KEYS or len(secret) < 32:
+            raise RuntimeError(
+                "FATAL: SECRET_KEY is missing or insecure. "
+                "Set a strong random SECRET_KEY (>= 32 chars) in your environment variables. "
+                "Generate one with: python -c \"import secrets; print(secrets.token_hex(64))\""
+            )
+        if not os.environ.get("DATABASE_URL"):
+            raise RuntimeError(
+                "FATAL: DATABASE_URL is not set. "
+                "Set a valid PostgreSQL connection string in your environment variables."
+            )
+
 
 CONFIG_MAP = {
     "development": DevelopmentConfig,
