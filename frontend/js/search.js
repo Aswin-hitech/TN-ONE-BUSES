@@ -1,628 +1,506 @@
 /**
- * Search page logic: reads query parameters, triggers search,
- * supports stop autocomplete, and renders rich bus cards.
+ * Search page: query params, stop autocomplete, sortable ride cards,
+ * spell-correction banner, and the shared add-stop flow.
  */
-document.addEventListener("DOMContentLoaded", async () => {
-  const topbarAuth = document.getElementById("topbar-auth");
-  TNAuth.renderTopbarAuth(topbarAuth, await TNAuth.getStatus());
+(() => {
+  "use strict";
 
-  const originInput = document.getElementById("origin-input");
-  const destInput = document.getElementById("destination-input");
-  const searchBtn = document.getElementById("search-button");
-  const resultsContainer = document.getElementById("results-container");
-  const resultCount = document.getElementById("result-count");
-  const searchSummary = document.getElementById("search-summary");
-  const summaryRoute = document.getElementById("summary-route-text");
-  const editSearchBtn = document.getElementById("edit-search");
+  const RECENT_KEY = "tn_one_recent_routes";
+  const SESSION_FROM = "tn_one_from";
+  const SESSION_TO = "tn_one_to";
+  const MAX_RECENTS = 4;
 
-  const busesById = new Map();
+  const $ = (sel, root = document) => root.querySelector(sel);
+  const $$ = (sel, root = document) => Array.from(root.querySelectorAll(sel));
 
-  // Setup stop autocomplete
-  setupAutocomplete(originInput);
-  setupAutocomplete(destInput);
+  const state = {
+    query: null,
+    entries: [],
+    other: [],
+    data: null,
+    sort: "soonest",
+    busMap: new Map(),
+    abort: null,
+    addStop: null,
+    elements: {},
+  };
 
-  // Modal elements
-  const addStopModal = document.getElementById("add-stop-modal");
-  const modalBusTitle = document.getElementById("modal-bus-title");
-  const modalBusSubtitle = document.getElementById("modal-bus-subtitle");
-  const closeAddStopModalBtn = document.getElementById("close-add-stop-modal");
-  const cancelAddStopBtn = document.getElementById("cancel-add-stop-btn");
-  const addStopForm = document.getElementById("add-stop-form");
-  const addStopBusId = document.getElementById("add-stop-bus-id");
-  const addStopAfterSelect = document.getElementById("add-stop-after-select");
-  const addStopNameInput = document.getElementById("add-stop-name-input");
-  const addStopTimeInput = document.getElementById("add-stop-time-input");
-  const addStopTimeAmpm = document.getElementById("add-stop-time-ampm");
-  const addStopAlert = document.getElementById("add-stop-alert");
-  const submitAddStopBtn = document.getElementById("submit-add-stop-btn");
-
-  if (addStopNameInput) {
-    setupAutocomplete(addStopNameInput);
+  function readRecents() {
+    try {
+      const parsed = JSON.parse(localStorage.getItem(RECENT_KEY) || "[]");
+      return Array.isArray(parsed)
+        ? parsed.filter((item) => item && typeof item.from === "string" && typeof item.to === "string").slice(0, MAX_RECENTS)
+        : [];
+    } catch (_) {
+      return [];
+    }
   }
 
-  if (addStopTimeInput && addStopTimeAmpm) {
-    const syncTimeAmpm = () => {
-      addStopTimeAmpm.textContent = addStopTimeInput.value ? formatTimeAmPm(addStopTimeInput.value) : "--:-- --";
-    };
-    addStopTimeInput.addEventListener("input", syncTimeAmpm);
-    addStopTimeInput.addEventListener("change", syncTimeAmpm);
+  function saveRecent(from, to) {
+    if (!to || !from) return;
+    const list = readRecents().filter(
+      (item) => !(item.from.toLowerCase() === from.toLowerCase() && item.to.toLowerCase() === to.toLowerCase())
+    );
+    list.unshift({ from, to, at: Date.now() });
+    try {
+      localStorage.setItem(RECENT_KEY, JSON.stringify(list.slice(0, MAX_RECENTS)));
+    } catch (_) {
+      /* storage disabled */
+    }
   }
 
-  function openAddStopModal(bus) {
-    if (!bus) return;
-    addStopBusId.value = bus.id;
-    modalBusTitle.textContent = `Add Stop to ${bus.bus_name || "Bus"}`;
-    modalBusSubtitle.textContent = `Route: ${bus.start_stop || "Start"} → ${bus.destination || "Destination"}`;
+  const SUGGESTED_ROUTES = [
+    { from: "Chennai", to: "Coimbatore" },
+    { from: "Madurai", to: "Rameswaram" },
+    { from: "Coimbatore", to: "Ooty" },
+    { from: "Tiruchirappalli", to: "Thanjavur" },
+  ];
 
-    // Collect existing stops in order
-    let stops = [];
-    if (bus.spots && Array.isArray(bus.spots) && bus.spots.length > 0) {
-      stops = bus.spots.map(s => s.stop || s.stop_name || "");
-    } else if (bus.stop_timings && Array.isArray(bus.stop_timings) && bus.stop_timings.length > 0) {
-      stops = bus.stop_timings.map(s => s.stop || s.stop_name || "");
+  function renderQuickChips() {
+    const { quickRow } = state.elements;
+    if (!quickRow) return;
+    const recents = readRecents();
+    const items = recents.length ? recents : SUGGESTED_ROUTES;
+    quickRow.innerHTML = items
+      .slice(0, 3)
+      .map(
+        (route) => `<button type="button" class="recent-chip" data-route-from="${TNUI.escapeHtml(route.from)}" data-route-to="${TNUI.escapeHtml(route.to)}">
+          ${TNUI.icon("route")}
+          <span>${TNUI.escapeHtml(route.from)} → ${TNUI.escapeHtml(route.to)}</span>
+        </button>`
+      )
+      .join("");
+  }
+
+  function updateClearButton() {
+    const { originInput, clearOrigin } = state.elements;
+    if (clearOrigin && originInput) clearOrigin.hidden = !originInput.value.trim();
+  }
+
+  function updateUrl() {
+    const url = new URL(window.location.href);
+    url.search = "";
+    if (state.query) {
+      if (state.query.from) url.searchParams.set("from", state.query.from);
+      if (state.query.to) url.searchParams.set("to", state.query.to);
+    }
+    window.history.replaceState(null, "", url.pathname + url.search + url.hash);
+  }
+
+  function updateHeading() {
+    const { resultsTitle, resultsSub, addRouteBtn } = state.elements;
+    const query = state.query;
+
+    if (query) {
+      if (query.from && query.to) resultsTitle.textContent = `${query.from} → ${query.to}`;
+      else if (query.from) resultsTitle.textContent = `Buses from ${query.from}`;
+      else resultsTitle.textContent = `Buses to ${query.to}`;
     } else {
-      const intermediate = bus.boarded_stops ? bus.boarded_stops.split(",").map(s => s.trim()).filter(Boolean) : [];
-      stops = [bus.start_stop, ...intermediate, bus.destination].filter(Boolean);
+      resultsTitle.textContent = "All community buses";
     }
 
-    // Filter duplicates preserving order
-    const uniqueStops = [];
-    stops.forEach(s => {
-      if (s && !uniqueStops.includes(s)) uniqueStops.push(s);
-    });
-
-    addStopAfterSelect.innerHTML = "";
-    uniqueStops.forEach((stopName, idx) => {
-      const opt = document.createElement("option");
-      opt.value = stopName;
-      if (idx === 0) {
-        opt.textContent = `After ${stopName} (Start)`;
-      } else if (idx === uniqueStops.length - 1) {
-        opt.textContent = `After ${stopName} (Near Destination)`;
-      } else {
-        opt.textContent = `After ${stopName}`;
-      }
-      addStopAfterSelect.appendChild(opt);
-    });
-
-    addStopNameInput.value = "";
-    addStopTimeInput.value = "";
-    addStopTimeAmpm.textContent = "--:-- --";
-    addStopAlert.style.display = "none";
-    addStopAlert.textContent = "";
-    submitAddStopBtn.disabled = false;
-    submitAddStopBtn.textContent = "Save Stop to Route";
-
-    addStopModal.style.display = "flex";
-    setTimeout(() => addStopNameInput.focus(), 50);
-  }
-
-  function closeAddStopModal() {
-    if (addStopModal) addStopModal.style.display = "none";
-  }
-
-  if (closeAddStopModalBtn) closeAddStopModalBtn.addEventListener("click", closeAddStopModal);
-  if (cancelAddStopBtn) cancelAddStopBtn.addEventListener("click", closeAddStopModal);
-  if (addStopModal) {
-    addStopModal.addEventListener("click", (e) => {
-      if (e.target === addStopModal) closeAddStopModal();
-    });
-  }
-
-  // Event delegation on results container for ➕ Add Stop button
-  resultsContainer.addEventListener("click", async (e) => {
-    const btn = e.target.closest(".btn-open-add-stop");
-    if (!btn) return;
-    e.preventDefault();
-
-    const auth = await TNAuth.getStatus();
-    if (!auth.authenticated) {
-      alert("Please log in to add a stop to this bus route.");
-      window.location.href = "/login?redirect=" + encodeURIComponent(window.location.href);
-      return;
+    const count = state.entries.length;
+    if (resultsSub) {
+      const parts = [`${count} bus${count === 1 ? "" : "es"}`];
+      if (state.other.length) parts.push(`${state.other.length} nearby`);
+      resultsSub.textContent = parts.join(" · ");
     }
 
-    const busId = Number(btn.dataset.busId);
-    const bus = busesById.get(busId);
-    if (!bus) {
-      alert("Bus details not found. Please refresh the page.");
-      return;
+    if (addRouteBtn) {
+      const params = new URLSearchParams();
+      if (query && query.from) params.set("from", query.from);
+      if (query && query.to) params.set("to", query.to);
+      addRouteBtn.href = `/report${params.toString() ? "?" + params.toString() : ""}`;
     }
-    openAddStopModal(bus);
-  });
+  }
 
-  // Modal form submit
-  if (addStopForm) {
-    addStopForm.addEventListener("submit", async (e) => {
-      e.preventDefault();
-      const busId = addStopBusId.value;
-      const afterStop = addStopAfterSelect.value;
-      const stopName = addStopNameInput.value.trim();
-      const timeVal = addStopTimeInput.value.trim();
+  function correctionMarkup() {
+    const data = state.data || {};
+    const query = state.query;
+    if (!query) return "";
+    const resolvedFrom =
+      data.resolved_from || (data.matched_origin_stops && data.matched_origin_stops[0] && data.matched_origin_stops[0].stop_name);
+    const resolvedTo =
+      data.resolved_to ||
+      (data.matched_destination_stops && data.matched_destination_stops[0] && data.matched_destination_stops[0].stop_name);
 
-      if (!stopName) {
-        addStopAlert.className = "alert alert-error";
-        addStopAlert.textContent = "Please enter a stop name.";
-        addStopAlert.style.display = "block";
-        return;
-      }
+    const notes = [];
+    if (resolvedFrom && query.from && resolvedFrom.toLowerCase() !== query.from.toLowerCase()) {
+      notes.push(`${query.from} → ${resolvedFrom}`);
+    }
+    if (resolvedTo && query.to && resolvedTo.toLowerCase() !== query.to.toLowerCase()) {
+      notes.push(`${query.to} → ${resolvedTo}`);
+    }
+    if (!notes.length && !data.query_corrected) return "";
+    return `<div class="correction-banner">
+      ${TNUI.icon("info")}
+      <span>${notes.length ? `Showing results for ${TNUI.escapeHtml(notes.join(" and "))}.` : "Matched the closest known stop names."}</span>
+    </div>`;
+  }
 
-      const formattedTime = timeVal ? formatTimeAmPm(timeVal) : null;
+  function sortEntries(list) {
+    const sorted = list.slice();
+    if (state.sort === "fare") {
+      const fareOf = (entry) => {
+        const value = entry.fare !== null && entry.fare !== undefined ? entry.fare : entry.bus && entry.bus.bus_fare;
+        const num = Number(value);
+        return Number.isFinite(num) ? num : Number.POSITIVE_INFINITY;
+      };
+      sorted.sort((a, b) => fareOf(a) - fareOf(b));
+    } else if (state.sort === "name") {
+      sorted.sort((a, b) =>
+        String((a.bus && a.bus.bus_name) || "").localeCompare(String((b.bus && b.bus.bus_name) || ""))
+      );
+    } else {
+      const minutesOf = (entry) => {
+        const value = Number(entry.minutes_until_boarding);
+        return Number.isFinite(value) ? value : Number.POSITIVE_INFINITY;
+      };
+      sorted.sort((a, b) => minutesOf(a) - minutesOf(b));
+    }
+    return sorted;
+  }
 
-      submitAddStopBtn.disabled = true;
-      submitAddStopBtn.textContent = "Saving Stop...";
-      addStopAlert.style.display = "none";
-
-      try {
-        const payload = {
-          stop_name: stopName,
-          after_stop: afterStop,
-        };
-        if (formattedTime) {
-          payload.time = formattedTime;
-        }
-
-        await TNOne.post(`/api/buses/${busId}/stops`, payload);
-
-        closeAddStopModal();
-        showToast(`Stop "${stopName}" added successfully to the route!`);
-
-        // Refresh search results to show new stop on cards immediately
-        performSearch(originInput.value.trim(), destInput.value.trim());
-      } catch (err) {
-        addStopAlert.className = "alert alert-error";
-        addStopAlert.textContent = err.message || "Failed to add stop. Please try again.";
-        addStopAlert.style.display = "block";
-        submitAddStopBtn.disabled = false;
-        submitAddStopBtn.textContent = "Save Stop to Route";
-      }
+  function emptyState({ title, description, href, actionLabel }) {
+    return TNUI.stateBox({
+      iconName: "bus",
+      title,
+      description,
+      action: `<div class="empty-actions">
+        <a class="btn btn-primary btn-sm" href="${href}">${TNUI.icon("plus")} ${TNUI.escapeHtml(actionLabel)}</a>
+        <button type="button" class="btn btn-secondary btn-sm" id="reset-search">${TNUI.icon("search")} Start over</button>
+      </div>`,
     });
   }
 
-  function showToast(message) {
-    const existing = document.querySelector(".toast-notification");
-    if (existing) existing.remove();
+  function renderResults() {
+    const { resultsList } = state.elements;
+    if (!resultsList) return;
+    const banner = correctionMarkup();
+    const entries = sortEntries(state.entries);
 
-    const toast = document.createElement("div");
-    toast.className = "toast-notification";
-    toast.innerHTML = `<span>✅</span> <span>${escapeHtml(message)}</span>`;
-    document.body.appendChild(toast);
+    if (entries.length) {
+      resultsList.innerHTML =
+        banner + `<div class="ride-list">${entries.map((entry, index) => TNUI.renderRideCard(entry, { index })).join("")}</div>`;
+    } else if (state.other.length) {
+      const others = sortEntries(state.other);
+      resultsList.innerHTML =
+        banner +
+        TNUI.stateBox({
+          iconName: "route",
+          title: "No direct bus found",
+          description: "These community buses touch one of your stops. They may still help with part of the journey.",
+          action: "",
+        }) +
+        `<div class="ride-list">${others.map((entry, index) => TNUI.renderRideCard(entry, { index })).join("")}</div>`;
+    } else if (state.query) {
+      const params = new URLSearchParams();
+      if (state.query.from) params.set("from", state.query.from);
+      if (state.query.to) params.set("to", state.query.to);
+      resultsList.innerHTML =
+        banner +
+        emptyState({
+          title: "No buses found for this route",
+          description: "Nobody has reported a bus here yet. Add it and help the next traveller.",
+          href: `/report${params.toString() ? "?" + params.toString() : ""}`,
+          actionLabel: "Add this route",
+        });
+    } else {
+      resultsList.innerHTML = emptyState({
+        title: "No buses registered yet",
+        description: "Be the first to add a community bus and help travellers across Tamil Nadu.",
+        href: "/report",
+        actionLabel: "Add a bus",
+      });
+    }
 
-    setTimeout(() => {
-      toast.style.transition = "opacity 0.3s, transform 0.3s";
-      toast.style.opacity = "0";
-      toast.style.transform = "translate(-50%, 20px)";
-      setTimeout(() => toast.remove(), 300);
-    }, 3500);
-  }
-
-  // Read URL parameters if coming from Home or another page
-  const urlParams = new URLSearchParams(window.location.search);
-  const fromParam = urlParams.get("from") || sessionStorage.getItem("tn_one_from") || "";
-  const toParam = urlParams.get("to") || urlParams.get("destination") || sessionStorage.getItem("tn_one_to") || "";
-
-  if (fromParam) originInput.value = fromParam;
-  if (toParam) destInput.value = toParam;
-
-  // Load all available buses immediately (or filtered if parameters exist)
-  performSearch(fromParam, toParam);
-
-  searchBtn.addEventListener("click", (e) => {
-    e.preventDefault();
-    const from = originInput.value.trim();
-    const to = destInput.value.trim();
-    performSearch(from, to);
-  });
-
-  if (editSearchBtn) {
-    editSearchBtn.addEventListener("click", () => {
-      searchSummary.style.display = "none";
-      originInput.focus();
-    });
+    TNUI.bindRideCards(resultsList);
+    updateHeading();
   }
 
   async function performSearch(from, to) {
-    // Show summary bar
-    if (from && to) {
-      summaryRoute.textContent = `${from} → ${to}`;
-      searchSummary.style.display = "flex";
-    } else if (from) {
-      summaryRoute.textContent = `Buses from ${from}`;
-      searchSummary.style.display = "flex";
-    } else if (to) {
-      summaryRoute.textContent = `Buses to ${to}`;
-      searchSummary.style.display = "flex";
-    } else {
-      summaryRoute.textContent = "All Available Buses";
-      searchSummary.style.display = "flex";
+    const { originInput, destinationInput, resultsList, resultsSub, searchBtn } = state.elements;
+    const cleanFrom = String(from || "").trim();
+    const cleanTo = String(to || "").trim();
+    const hasQuery = Boolean(cleanFrom || cleanTo);
+
+    state.query = hasQuery ? { from: cleanFrom, to: cleanTo } : null;
+    state.data = null;
+    state.entries = [];
+    state.other = [];
+    state.busMap.clear();
+    updateUrl();
+
+    if (hasQuery) {
+      if (cleanFrom) {
+        try { sessionStorage.setItem(SESSION_FROM, cleanFrom); } catch (_) {}
+      }
+      if (cleanTo) {
+        try { sessionStorage.setItem(SESSION_TO, cleanTo); } catch (_) {}
+      }
+      saveRecent(cleanFrom, cleanTo);
+      renderQuickChips();
     }
 
-    // Update URL without reloading
-    const newParams = new URLSearchParams();
-    if (from) newParams.set("from", from);
-    if (to) newParams.set("to", to);
-    const queryStr = newParams.toString();
-    window.history.replaceState({}, "", queryStr ? `${window.location.pathname}?${queryStr}` : window.location.pathname);
+    if (resultsList) {
+      resultsList.innerHTML = TNUI.skeletonCards(3);
+      resultsList.setAttribute("aria-busy", "true");
+    }
+    if (resultsSub) resultsSub.textContent = "Searching community timings…";
+    const { resultsTitle } = state.elements;
+    if (resultsTitle) {
+      if (cleanFrom && cleanTo) resultsTitle.textContent = `${cleanFrom} → ${cleanTo}`;
+      else if (cleanFrom) resultsTitle.textContent = `Buses from ${cleanFrom}`;
+      else if (cleanTo) resultsTitle.textContent = `Buses to ${cleanTo}`;
+      else resultsTitle.textContent = "All community buses";
+    }
 
-    // Render loading indicator
-    resultsContainer.innerHTML = `
-      <div class="state-box">
-        <div class="loading-spinner"></div>
-        <p class="state-title">Loading available buses...</p>
-        <p class="state-desc">Fetching schedule and community reports across Tamil Nadu.</p>
-      </div>`;
-    resultCount.textContent = "Searching...";
+    if (searchBtn) searchBtn.disabled = true;
+    if (state.abort) state.abort.abort();
+    state.abort = new AbortController();
+    const controller = state.abort;
+
+    const params = {};
+    if (cleanFrom) params.from = cleanFrom;
+    if (cleanTo) params.to = cleanTo;
 
     try {
-      const params = {};
-      if (from) params.from = from;
-      if (to) params.to = to;
+      const payload = await TNOne.request("/api/search", {
+        method: "GET",
+        params,
+        signal: controller.signal,
+      });
+      if (controller.signal.aborted) return;
 
-      const res = await TNOne.get("/api/search", params);
-      const results = res.data && res.data.results ? res.data.results : [];
-      const otherBuses = res.data && res.data.other_buses ? res.data.other_buses : [];
+      state.data = (payload && payload.data) || {};
+      state.entries = Array.isArray(state.data.results) ? state.data.results.slice() : [];
+      state.other = Array.isArray(state.data.other_buses) ? state.data.other_buses.slice() : [];
+      state.busMap.clear();
+      [...state.entries, ...state.other].forEach((entry) => {
+        if (entry && entry.bus && entry.bus.id) state.busMap.set(Number(entry.bus.id), entry.bus);
+      });
 
-      // Check if query was auto-corrected by fuzzy matching
-      const queryCorrected = res.data && res.data.query_corrected;
-      const resolvedFrom = (res.data && res.data.resolved_from) || (res.data && res.data.matched_origin_stops && res.data.matched_origin_stops[0] && res.data.matched_origin_stops[0].stop_name);
-      const resolvedTo = (res.data && res.data.resolved_to) || (res.data && res.data.matched_destination_stops && res.data.matched_destination_stops[0] && res.data.matched_destination_stops[0].stop_name);
-
-      // Update input boxes with resolved canonical names if corrected
-      if (queryCorrected) {
-        if (res.data.resolved_from && originInput) originInput.value = res.data.resolved_from;
-        if (res.data.resolved_to && destInput) destInput.value = res.data.resolved_to;
+      // Adopt canonical stop names when the backend fuzzy-matched a typo.
+      if (state.data.resolved_from && originInput && originInput.value.trim() !== state.data.resolved_from) {
+        originInput.value = state.data.resolved_from;
       }
+      if (state.data.resolved_to && destinationInput && destinationInput.value.trim() !== state.data.resolved_to) {
+        destinationInput.value = state.data.resolved_to;
+      }
+      updateClearButton();
 
-      renderResults(results, otherBuses, from, to, queryCorrected ? { resolvedFrom, resolvedTo, originalFrom: from, originalTo: to } : null);
-    } catch (err) {
-      resultsContainer.innerHTML = `
-        <div class="state-box">
-          <div class="state-icon">⚠️</div>
-          <p class="state-title">Something went wrong</p>
-          <p class="state-desc">${escapeHtml(err.message || "Please check your connection and try again.")}</p>
-        </div>`;
-      resultCount.textContent = "Error loading buses";
+      renderResults();
+      if (resultsList) resultsList.setAttribute("aria-busy", "false");
+    } catch (error) {
+      if (error && (error.name === "AbortError" || controller.signal.aborted)) return;
+      if (resultsList) {
+        resultsList.setAttribute("aria-busy", "false");
+        resultsList.innerHTML = TNUI.stateBox({
+          iconName: "wifiOff",
+          title: "Could not load buses",
+          description: error.message || "Check your connection and try again.",
+          action: '<button type="button" class="btn btn-secondary btn-sm" id="retry-search">Try again</button>',
+        });
+      }
+      if (resultsSub) resultsSub.textContent = "Search failed";
+    } finally {
+      if (!controller.signal.aborted && searchBtn) searchBtn.disabled = false;
     }
   }
 
-  function renderResults(results, otherBuses, from, to, correction = null) {
-    // Save into busesById lookup map
-    busesById.clear();
-    [...(results || []), ...(otherBuses || [])].forEach(entry => {
-      if (entry && entry.bus && entry.bus.id) {
-        busesById.set(Number(entry.bus.id), entry.bus);
+  function currentSearch() {
+    if (!state.query) return performSearch("", "");
+    return performSearch(state.query.from, state.query.to);
+  }
+
+  async function shareSearch() {
+    const url = new URL(window.location.href);
+    url.search = "";
+    if (state.query) {
+      if (state.query.from) url.searchParams.set("from", state.query.from);
+      if (state.query.to) url.searchParams.set("to", state.query.to);
+    }
+    const text = state.query
+      ? `${state.query.from || "Anywhere"} → ${state.query.to || "Tamil Nadu"} on TN FOR BUS`
+      : "Community bus routes on TN FOR BUS";
+    try {
+      if (navigator.share) {
+        await navigator.share({ title: "TN FOR BUS", text, url: url.toString() });
+        return;
       }
+      await navigator.clipboard.writeText(`${text}\n${url.toString()}`);
+      TNUI.toast("Link copied.");
+    } catch (error) {
+      if (error && error.name === "AbortError") return;
+      try {
+        await navigator.clipboard.writeText(url.toString());
+        TNUI.toast("Link copied.");
+      } catch (_) {
+        TNUI.toast("Could not copy the link.", { type: "error" });
+      }
+    }
+  }
+
+  function bindEvents() {
+    const {
+      originInput,
+      destinationInput,
+      clearOrigin,
+      swapBtn,
+      searchBtn,
+      quickRow,
+      sortRow,
+      refreshBtn,
+      shareBtn,
+      resultsList,
+    } = state.elements;
+
+    originInput.addEventListener("input", updateClearButton);
+    originInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      if (!destinationInput.value.trim()) destinationInput.focus();
+      else performSearch(originInput.value, destinationInput.value);
+    });
+    destinationInput.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter") return;
+      event.preventDefault();
+      performSearch(originInput.value, destinationInput.value);
     });
 
-    // Spell-correction notice
-    let correctionBanner = "";
-    if (correction) {
-      const parts = [];
-      if (correction.resolvedFrom && correction.originalFrom && correction.resolvedFrom.toLowerCase() !== correction.originalFrom.toLowerCase()) {
-        parts.push(`"${escapeHtml(correction.originalFrom)}" → <strong>${escapeHtml(correction.resolvedFrom)}</strong>`);
-      }
-      if (correction.resolvedTo && correction.originalTo && correction.resolvedTo.toLowerCase() !== correction.originalTo.toLowerCase()) {
-        parts.push(`"${escapeHtml(correction.originalTo)}" → <strong>${escapeHtml(correction.resolvedTo)}</strong>`);
-      }
-      if (parts.length > 0) {
-        correctionBanner = `
-          <div style="background:var(--color-primary-light); border:1px solid var(--color-primary); border-radius:var(--radius-sm); padding:8px 14px; margin-bottom:14px; font-size:13px; color:var(--color-text);">
-            🔍 Showing results for ${parts.join(" and ")}
-          </div>`;
-      }
-    }
+    clearOrigin.addEventListener("click", () => {
+      originInput.value = "";
+      updateClearButton();
+      originInput.focus();
+    });
 
-    const isFiltered = Boolean(from || to);
+    swapBtn.addEventListener("click", () => {
+      const from = originInput.value;
+      originInput.value = destinationInput.value;
+      destinationInput.value = from;
+      updateClearButton();
+      performSearch(originInput.value, destinationInput.value);
+    });
 
-    // Case 1: Unfiltered browsing (display all available buses)
-    if (!isFiltered) {
-      if (!results || results.length === 0) {
-        resultCount.textContent = "0 buses registered";
-        resultsContainer.innerHTML = `
-          <div class="state-box">
-            <div class="state-icon">🚌</div>
-            <p class="state-title">No buses registered yet</p>
-            <p class="state-desc">Be the first to add one and help travelers across Tamil Nadu.</p>
-            <a href="/report" class="btn-primary" style="display:inline-flex; width:auto;">
-              ＋ Add Bus
-            </a>
-          </div>`;
+    searchBtn.addEventListener("click", () => performSearch(originInput.value, destinationInput.value));
+
+    TNUI.attachAutocomplete(originInput, {
+      includeMapPlaces: true,
+      onSelect: () => {
+        updateClearButton();
+        if (!destinationInput.value.trim()) destinationInput.focus();
+      },
+    });
+    TNUI.attachAutocomplete(destinationInput, { includeMapPlaces: true });
+
+    quickRow.addEventListener("click", (event) => {
+      const chip = event.target.closest("[data-route-from], [data-route-to]");
+      if (!chip) return;
+      originInput.value = chip.dataset.routeFrom || "";
+      destinationInput.value = chip.dataset.routeTo || "";
+      updateClearButton();
+      performSearch(originInput.value, destinationInput.value);
+    });
+
+    sortRow.addEventListener("click", (event) => {
+      const button = event.target.closest(".sort-btn");
+      if (!button) return;
+      state.sort = button.dataset.sort || "soonest";
+      $$(".sort-btn", sortRow).forEach((node) => {
+        const active = node === button;
+        node.classList.toggle("active", active);
+        node.setAttribute("aria-selected", active ? "true" : "false");
+      });
+      renderResults();
+    });
+
+    refreshBtn.addEventListener("click", currentSearch);
+    shareBtn.addEventListener("click", shareSearch);
+
+    resultsList.addEventListener("click", async (event) => {
+      if (event.target.closest("#retry-search")) {
+        currentSearch();
         return;
       }
-      resultCount.textContent = `${results.length} bus${results.length === 1 ? "" : "es"} available`;
-      resultsContainer.innerHTML = `<div class="bus-list">${results.map(renderBusCard).join("")}</div>`;
-      return;
-    }
-
-    // Case 2: Filtered / sorted by origin or route
-    const addBusUrl = `/report?${from ? "from=" + encodeURIComponent(from) + "&" : ""}${to ? "to=" + encodeURIComponent(to) : ""}`;
-
-    if (results && results.length > 0) {
-      const label = (from && to)
-        ? `${results.length} bus${results.length === 1 ? "" : "es"} on route`
-        : `${results.length} matching bus${results.length === 1 ? "" : "es"}`;
-      resultCount.textContent = label;
-
-      let html = correctionBanner + `<div class="bus-list">${results.map(renderBusCard).join("")}</div>`;
-      resultsContainer.innerHTML = html;
-    } else {
-      // 0 direct matches
-      resultCount.textContent = "0 buses found";
-
-      let html = `
-        <div class="state-box" style="margin-bottom: 24px;">
-          <div class="state-icon">🚌</div>
-          <p class="state-title">No direct buses found for this selection</p>
-          <p class="state-desc">You can contribute this route timing to help other commuters.</p>
-          <a href="${addBusUrl}" class="btn-primary" style="display:inline-flex; width:auto; margin-top: 6px;">
-            ＋ Add Bus for this route
-          </a>
-        </div>`;
-      
-      resultsContainer.innerHTML = html;
-    }
-  }
-
-  function renderBusCard(entry) {
-    const bus = entry.bus || {};
-    const title = escapeHtml(bus.bus_name || "Mofussil Bus");
-    const busNum = bus.bus_number ? `<span class="bus-number-badge">${escapeHtml(bus.bus_number)}</span>` : "";
-    const operator = [bus.operator, bus.bus_type].filter(Boolean).map(escapeHtml).join(" · ");
-    
-    // Boarding & Destination
-    const fromName = entry.boarding_stop ? escapeHtml(entry.boarding_stop.stop_name) : "Origin";
-    const toName = entry.destination_stop ? escapeHtml(entry.destination_stop.stop_name) : "Destination";
-    const routeLine = `${fromName} <span class="arrow">→</span> ${toName}`;
-
-    // Calculate / Highlight Next Bus (strictly AM/PM)
-    let nextBusBanner = "";
-    const rawTime = entry.boarding_time || entry.timing_display || (bus.timings && bus.timings[0]);
-    const timeStr = formatTimeAmPm(rawTime);
-
-    if (entry.is_next_bus || entry.timing_state === "upcoming" || entry.timing_state === "just_departed") {
-      const mins = entry.minutes_until_boarding;
-      let countdownText = "";
-      if (mins !== null && mins !== undefined) {
-        countdownText = mins > 0 ? `in ${Math.round(mins)} min` : "Departing now";
-      }
-      nextBusBanner = `
-        <div class="next-bus-banner">
-          <span class="badge">🟢 Next reported bus ${timeStr ? "· " + timeStr : ""}</span>
-          <span class="countdown">${countdownText}</span>
-        </div>`;
-    }
-
-    // Expected Reaching / Arrival Time in AM/PM
-    let reachingHtml = "";
-    const reachingStr = formatTimeAmPm(entry.reaching_time || bus.reaching_time);
-    if (reachingStr) {
-      reachingHtml = `
-        <div class="bus-reaching-badge" style="display:inline-flex; align-items:center; gap:5px; font-size:12px; font-weight:700; color:var(--color-primary); background:var(--color-primary-light); padding:4px 10px; border-radius:var(--radius-sm); margin:8px 0 4px;">
-          ⏱️ Expected Arrival: ${escapeHtml(reachingStr)}
-        </div>`;
-    }
-
-    // Route Spots with Timing Timeline
-    let spotsHtml = "";
-    const safeBusId = Number(bus.id);
-    const fareDisplay = (entry.fare !== null && entry.fare !== undefined) ? entry.fare : (bus.bus_fare ?? 25);
-    const spotsList = entry.spots || entry.stop_timings || (bus.spots || bus.stop_timings);
-    if (spotsList && Array.isArray(spotsList) && spotsList.length > 0) {
-      const items = spotsList.map((sp, sIdx) => {
-        const isStart = sIdx === 0;
-        const isDest = sIdx === spotsList.length - 1;
-        const typeClass = isStart ? "start" : (isDest ? "dest" : "intermediate");
-        const spotName = escapeHtml(sp.stop || sp.stop_name || "");
-        const spotTime = sp.time ? escapeHtml(formatTimeAmPm(sp.time)) : "";
-        const arrow = !isDest ? `<span class="spot-arrow-sep">→</span>` : "";
-        return `
-          <span class="spot-item-badge ${typeClass}">
-            <span class="spot-dot-indicator"></span>
-            <span class="spot-badge-name">${spotName}</span>
-            ${spotTime ? `<span class="spot-badge-time">${spotTime}</span>` : ""}
-          </span>
-          ${arrow}
-        `;
-      }).join("");
-
-      spotsHtml = `
-        <div class="spots-route-timeline">
-          <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
-            <span>📍 Spots &amp; Passing Timings</span>
-            <div style="display:flex; gap:6px;">
-              <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${safeBusId}">
-                ➕ Add Stop
-              </button>
-              <a href="/edit?id=${safeBusId}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
-                ✏️ Edit Details
-              </a>
-            </div>
-          </div>
-          <div class="spots-scroll-wrap">
-            ${items}
-          </div>
-        </div>`;
-    } else {
-      // If no detailed spots list yet, render basic start/dest with Add Stop trigger
-      const startName = escapeHtml(bus.start_stop || fromName || "Start");
-      const destName = escapeHtml(bus.destination || toName || "Destination");
-      spotsHtml = `
-        <div class="spots-route-timeline">
-          <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
-            <span>📍 Route Stops</span>
-            <div style="display:flex; gap:6px;">
-              <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${safeBusId}">
-                ➕ Add Stop
-              </button>
-              <a href="/edit?id=${safeBusId}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
-                ✏️ Edit Details
-              </a>
-            </div>
-          </div>
-          <div class="spots-scroll-wrap">
-            <span class="spot-item-badge start">
-              <span class="spot-dot-indicator"></span>
-              <span class="spot-badge-name">${startName}</span>
-            </span>
-            <span class="spot-arrow-sep">→</span>
-            <span class="spot-item-badge dest">
-              <span class="spot-dot-indicator"></span>
-              <span class="spot-badge-name">${destName}</span>
-            </span>
-          </div>
-        </div>`;
-    }
-
-    // Known Timings list formatted strictly in AM/PM
-    let timingsHtml = "";
-    if (bus.timings && bus.timings.length > 0) {
-      const chips = bus.timings.map(t => `<span class="timing-chip">${escapeHtml(formatTimeAmPm(t))}</span>`).join("");
-      timingsHtml = `
-        <div class="bus-timings-wrap">
-          <div class="bus-timings-label">Known Trip Timings</div>
-          <div class="bus-timings-list">${chips}</div>
-        </div>`;
-    }
-
-    // Freshness & notes
-    const freshness = entry.freshness || { label: "Recently reported", level: "fresh" };
-    const notesHtml = entry.notes ? `<div style="font-style:italic; margin-top:6px; color:var(--color-text-secondary);">${escapeHtml(entry.notes)}</div>` : "";
-
-    // Photos
-    let photosHtml = "";
-    if (bus.photos && bus.photos.length > 0) {
-      const thumbs = bus.photos.map(url => `<img src="${escapeHtml(url)}" class="bus-photo-thumb" alt="Bus photo" onerror="this.style.display='none'" />`).join("");
-      photosHtml = `<div class="bus-photos-row">${thumbs}</div>`;
-    }
-
-    return `
-      <div class="bus-card ${entry.is_next_bus ? "is-next-bus" : ""}">
-        <div class="bus-card-top">
-          <div class="bus-identity">
-            <div class="bus-name-row">
-              <span class="bus-name">🚌 ${title}</span>
-              ${busNum}
-            </div>
-            ${operator ? `<span class="bus-operator">${operator}</span>` : ""}
-          </div>
-          <div class="bus-fare">₹${fareDisplay}</div>
-        </div>
-
-        <div class="bus-route-path">${routeLine}</div>
-
-        ${nextBusBanner}
-        ${reachingHtml}
-        ${spotsHtml}
-        ${timingsHtml}
-        ${photosHtml}
-        ${notesHtml}
-
-        <div class="bus-card-footer">
-          <div class="freshness-tag">
-            <span class="freshness-dot ${escapeHtml(freshness.level)}"></span>
-            <span>${escapeHtml(freshness.label)}</span>
-          </div>
-          <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${safeBusId}" style="margin-left: auto;">
-            ➕ Add Stop to Route
-          </button>
-        </div>
-      </div>`;
-
-  }
-
-  function renderInitialState() {
-    resultCount.textContent = "Search to discover buses";
-    searchSummary.style.display = "none";
-    resultsContainer.innerHTML = `
-      <div class="state-box">
-        <div class="state-icon">🗺️</div>
-        <p class="state-title">Where are you going?</p>
-        <p class="state-desc">Enter your starting point and destination to find community-reported buses.</p>
-      </div>`;
-  }
-
-  function setupAutocomplete(inputEl) {
-    if (!inputEl) return;
-    const wrap = document.createElement("div");
-    wrap.className = "autocomplete-wrap";
-    inputEl.parentNode.insertBefore(wrap, inputEl);
-    wrap.appendChild(inputEl);
-
-    const list = document.createElement("div");
-    list.className = "autocomplete-list";
-    wrap.appendChild(list);
-
-    let debounceTimer = null;
-    inputEl.addEventListener("input", () => {
-      clearTimeout(debounceTimer);
-      const q = inputEl.value.trim();
-      if (q.length < 2) {
-        list.classList.remove("active");
-        list.innerHTML = "";
-        return;
-      }
-      debounceTimer = setTimeout(async () => {
+      if (event.target.closest("#reset-search")) {
+        originInput.value = "";
+        destinationInput.value = "";
+        updateClearButton();
         try {
-          // Fetch Nominatim and DB simultaneously
-          const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ", Tamil Nadu, India")}&limit=4`;
-          const [nomRes, dbRes] = await Promise.all([
-            fetch(nomUrl, { headers: { "Accept-Language": "en" } }).catch(() => null),
-            TNOne.get("/api/stops/search", { q }).catch(() => null)
-          ]);
-          
-          const nomData = nomRes && nomRes.ok ? await nomRes.json() : [];
-          const dbData = dbRes && dbRes.data ? dbRes.data : [];
-          
-          if (!nomData.length && !dbData.length) {
-            list.classList.remove("active");
-            return;
-          }
-          
-          let html = "";
-          
-          if (dbData.length > 0) {
-            html += `<div style="font-size:10px; font-weight:800; text-transform:uppercase; color:var(--color-text-secondary); padding: 6px 12px 2px; background:var(--color-background);">Known Bus Stops</div>`;
-            html += dbData.slice(0, 5).map(s => `
-              <div class="autocomplete-item" data-name="${escapeHtml(s.stop_name)}">
-                <div style="font-weight: 600;">🚌 ${escapeHtml(s.stop_name)}</div>
-              </div>`).join("");
-          }
-          
-          if (nomData.length > 0) {
-            html += `<div style="font-size:10px; font-weight:800; text-transform:uppercase; color:var(--color-text-secondary); padding: 6px 12px 2px; background:var(--color-background);">Map Places</div>`;
-            html += nomData.map((s) => {
-              const nameParts = s.display_name.split(", ");
-              const shortName = nameParts[0];
-              const subText = nameParts.slice(1, 3).join(", ");
-              return `<div class="autocomplete-item" data-name="${escapeHtml(shortName)}">
-                <div style="font-weight: 600;">📍 ${escapeHtml(shortName)}</div>
-                <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;">${escapeHtml(subText)}</div>
-              </div>`;
-            }).join("");
-          }
-          
-          list.innerHTML = html;
-          list.classList.add("active");
-        } catch (_) {
-          list.classList.remove("active");
-        }
-      }, 300);
+          sessionStorage.removeItem(SESSION_FROM);
+          sessionStorage.removeItem(SESSION_TO);
+        } catch (_) {}
+        performSearch("", "");
+        originInput.focus();
+        return;
+      }
+
+      const addStopBtn = event.target.closest(".btn-open-add-stop");
+      if (!addStopBtn) return;
+      event.preventDefault();
+
+      const status = await TNAuth.getStatus();
+      if (!status || !status.authenticated) {
+        window.location.href = TNAuth.loginUrl();
+        return;
+      }
+      const bus = state.busMap.get(Number(addStopBtn.dataset.busId));
+      if (!bus) {
+        TNUI.toast("Bus details are unavailable. Refresh and try again.", { type: "error" });
+        return;
+      }
+      if (state.addStop) state.addStop.open(bus);
     });
-
-      list.addEventListener("click", (e) => {
-        const item = e.target.closest(".autocomplete-item");
-        if (!item) return;
-        inputEl.value = item.dataset.name;
-        list.classList.remove("active");
-      });
-
-      document.addEventListener("click", (e) => {
-        if (!wrap.contains(e.target)) list.classList.remove("active");
-      });
   }
 
-  function escapeHtml(str) {
-    if (!str) return "";
-    return String(str).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  function init() {
+    const elements = {
+      originInput: $("#origin-input"),
+      destinationInput: $("#destination-input"),
+      clearOrigin: $("#clear-origin"),
+      swapBtn: $("#swap-locations"),
+      searchBtn: $("#search-button"),
+      quickRow: $("#quick-row"),
+      resultsList: $("#results-list"),
+      resultsTitle: $("#results-title"),
+      resultsSub: $("#results-sub"),
+      sortRow: $("#sort-row"),
+      refreshBtn: $("#refresh-search"),
+      shareBtn: $("#share-search"),
+      addRouteBtn: $("#add-route-btn"),
+    };
+    state.elements = elements;
+
+    if (!elements.originInput || !elements.resultsList) return;
+
+    TNAuth.renderAll("[data-auth-slot]");
+    state.addStop = TNUI.initAddStopModal({ onSaved: currentSearch });
+
+    bindEvents();
+    renderQuickChips();
+    updateClearButton();
+
+    let sessionFrom = "";
+    let sessionTo = "";
+    try {
+      sessionFrom = sessionStorage.getItem(SESSION_FROM) || "";
+      sessionTo = sessionStorage.getItem(SESSION_TO) || "";
+    } catch (_) {}
+
+    const params = new URLSearchParams(window.location.search);
+    const initialFrom = params.get("from") || params.get("origin") || sessionFrom;
+    const initialTo = params.get("to") || params.get("destination") || sessionTo;
+
+    if (initialFrom) elements.originInput.value = initialFrom;
+    if (initialTo) elements.destinationInput.value = initialTo;
+    updateClearButton();
+
+    performSearch(initialFrom, initialTo);
   }
-});
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", init, { once: true });
+  } else {
+    init();
+  }
+})();

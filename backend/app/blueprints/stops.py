@@ -1,5 +1,6 @@
 from flask import Blueprint, request
 from pydantic import ValidationError
+from app.extensions import limiter
 from app.models.stop import normalize_stop_name
 from app.schemas.stop import StopCreate
 from app.services.bus_service import search_stops
@@ -10,6 +11,7 @@ bp = Blueprint("stops", __name__, url_prefix="/api/stops")
 
 
 @bp.route("/search", methods=["GET"])
+@limiter.limit("90 per minute")
 def search():
     query = request.args.get("q", "")
     if not query.strip():

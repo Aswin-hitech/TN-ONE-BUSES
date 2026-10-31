@@ -108,4 +108,10 @@ with app.app_context():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    # Never enable the interactive debugger by default: it grants remote code
+    # execution to anyone who can reach the port. Opt in explicitly for local
+    # development with FLASK_DEBUG=1, and bind to loopback unless HOST is set.
+    debug = os.environ.get("FLASK_DEBUG", "0").lower() in {"1", "true", "yes"}
+    host = os.environ.get("HOST", "127.0.0.1")
+    port = int(os.environ.get("PORT", "5000"))
+    app.run(host=host, port=port, debug=debug)

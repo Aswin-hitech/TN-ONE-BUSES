@@ -2,283 +2,168 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Register — TN FOR BUS</title>
-  <meta name="description" content="Create an account on TN FOR BUS community transit platform for Tamil Nadu bus routes and timings." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Create an account — TN FOR BUS</title>
+  <meta name="description" content="Create a TN FOR BUS account to add bus routes and keep community timings accurate across Tamil Nadu." />
+  <meta name="theme-color" content="#0b6e4f" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="robots" content="index, follow" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/responsive.css" />
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
-
-  <style>
-    /* Superb Premium UI Overrides for Register */
-    .register-wrapper {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 32px 16px 48px;
-    }
-
-    .register-card {
-      width: 100%;
-      max-width: 440px;
-      background: var(--color-surface);
-      border: 1px solid var(--color-border);
-      border-radius: var(--radius-xl);
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
-      padding: 36px 32px;
-      transition: all 0.3s ease;
-    }
-
-    .register-card:hover {
-      box-shadow: 0 14px 40px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
-    }
-
-    .register-header {
-      text-align: center;
-      margin-bottom: 28px;
-    }
-
-    .register-header h1 {
-      font-size: 26px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      color: var(--color-text);
-      margin-top: 12px;
-      margin-bottom: 4px;
-    }
-
-    .register-header p {
-      font-size: 13px;
-      color: var(--color-text-secondary);
-      font-weight: 500;
-    }
-
-    .field-group {
-      margin-bottom: 18px;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .field-group label {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--color-text);
-      margin-bottom: 8px;
-      letter-spacing: 0.2px;
-    }
-
-    .field-group input {
-      width: 100%;
-      height: 48px;
-      padding: 0 16px;
-      font-size: 15px;
-      font-weight: 500;
-      color: var(--color-text);
-      background: var(--color-surface);
-      border: 1.5px solid var(--color-border);
-      border-radius: var(--radius-md);
-      outline: none;
-      transition: all 0.2s ease;
-      box-sizing: border-box;
-    }
-
-    .field-group input:focus {
-      border-color: var(--color-primary);
-      box-shadow: 0 0 0 4px var(--color-primary-light);
-    }
-
-    .btn-register-submit {
-      width: 100%;
-      height: 50px;
-      margin-top: 10px;
-      background: var(--color-primary);
-      color: #ffffff;
-      font-size: 16px;
-      font-weight: 700;
-      border: none;
-      border-radius: var(--radius-md);
-      cursor: pointer;
-      box-shadow: 0 4px 14px rgba(11, 110, 79, 0.25);
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .btn-register-submit:hover:not(:disabled) {
-      background: var(--color-primary-hover);
-      box-shadow: 0 6px 20px rgba(11, 110, 79, 0.35);
-      transform: translateY(-1px);
-    }
-
-    .btn-register-submit:active:not(:disabled) {
-      transform: translateY(0);
-    }
-
-    .btn-register-submit:disabled {
-      opacity: 0.65;
-      cursor: not-allowed;
-    }
-  </style>
+  <script src="js/theme-boot.js"></script>
 </head>
 
 <body>
-  <div class="register-wrapper">
-    <div class="register-card">
-      <!-- TOP BAR WITH THEME CONTROLS AT TOP OF BOX -->
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px;">
-        <a href="/" class="logo-placeholder" style="width:40px; height:40px; font-size:15px;">TN</a>
+  <div class="auth-page">
+    <aside class="auth-hero" aria-hidden="true">
+      <div class="auth-hero__brand">
+        <a href="/" class="logo-placeholder">TN</a>
+        <div class="brand-text-block">
+          <span class="brand-title">TN FOR BUS</span>
+          <span class="brand-tagline">Community-Powered Bus Network</span>
+        </div>
+      </div>
+
+      <div class="auth-hero__content">
+        <span class="auth-hero__eyebrow">Join the network</span>
+        <h1 class="auth-hero__title">Know a route?<br /><em>Put it on the map.</em></h1>
+        <p class="auth-hero__desc">Add the buses you actually take. Your notes help riders find the right stop, the right timing and the right fare.</p>
+
+        <div class="auth-hero__features">
+          <div class="auth-hero__feature">
+            <span class="hero-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 17V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v11"/><path d="M4 11h16"/><path d="M8 17v2M16 17v2"/></svg>
+            </span>
+            <div><strong>Add routes in minutes</strong>Stops, timings and fare in one form.</div>
+          </div>
+          <div class="auth-hero__feature">
+            <span class="hero-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10.5-10.5a2.4 2.4 0 0 0-3.4-3.4L4.6 16.6 4 20Z"/><path d="m13.5 7.5 3 3"/></svg>
+            </span>
+            <div><strong>Fix what’s wrong</strong>Suggest corrections on any route.</div>
+          </div>
+          <div class="auth-hero__feature">
+            <span class="hero-ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 5 6v5.5c0 4.4 3 7.6 7 9.5 4-1.9 7-5.1 7-9.5V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
+            </span>
+            <div><strong>No ads, no resale</strong>Your account exists to help other riders.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="auth-hero__route">
+        <span class="hero-stop"><i></i>Board</span>
+        <span class="hero-line"></span>
+        <span class="hero-stop"><i class="end"></i>Arrive</span>
+      </div>
+    </aside>
+
+    <main class="auth-main">
+      <div class="auth-main__top">
+        <a href="/" class="btn btn-ghost btn-sm">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>
+          Back to map
+        </a>
         <div class="theme-mount"></div>
       </div>
 
-      <!-- HEADER -->
-      <div class="register-header" style="margin-bottom: 24px;">
-        <h1>Register</h1>
-        <p>Create your account on TN FOR BUS</p>
-      </div>
-
-      <!-- INLINE ALERT -->
-      <div id="register-alert" class="alert"></div>
-
-      <!-- REGISTRATION FORM (Username, Password, Name, Email, Phone Number alone - NO placeholders) -->
-      <form id="register-form" autocomplete="off">
-        <div class="field-group">
-          <label for="username">Username</label>
-          <input id="username" type="text" autocomplete="username" required />
+      <div class="auth-card">
+        <div class="auth-card__head">
+          <span class="auth-card__eyebrow">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:12px;height:12px"><path d="M12 5v14M5 12h14"/></svg>
+            New account
+          </span>
+          <h1>Join TN FOR BUS</h1>
+          <p class="auth-desc">Free, ad-light and rider-run. Create an account to contribute routes.</p>
         </div>
 
-        <div class="field-group">
-          <label for="password">Password</label>
-          <input id="password" type="password" autocomplete="new-password" required />
-        </div>
+        <div id="register-alert" class="alert" role="status" aria-live="polite"></div>
 
-        <div class="field-group">
-          <label for="name">Name</label>
-          <input id="name" type="text" autocomplete="name" required />
-        </div>
-
-        <div class="field-group">
-          <label for="email">Email</label>
-          <input id="email" type="email" autocomplete="email" required />
-        </div>
-
-        <div class="field-group">
-          <label for="phone">Phone Number</label>
-          <input id="phone" type="tel" autocomplete="tel" required />
-        </div>
-
-        <button type="submit" id="submit-register-btn" class="btn-register-submit">
-          Register
+        <button id="google-signup-btn" class="google-btn" type="button">
+          <svg class="google-icon-svg" viewBox="0 0 24 24" aria-hidden="true">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.06l3.66 2.84c.87-2.6 3.3-4.52 6.16-4.52z"/>
+          </svg>
+          <span>Continue with Google</span>
         </button>
-      </form>
+        <p id="google-note" class="field-help" style="margin-top:8px" hidden>Google sign-in is not configured on this server. Use the form below.</p>
 
-      <!-- SWITCH TO LOGIN -->
-      <div class="auth-toggle-row" style="margin-top:22px; text-align:center;">
-        <span style="color:var(--color-text-secondary); font-size:13px;">Already have an account?</span>
-        <a href="/login" class="auth-toggle-btn" style="text-decoration:none; font-weight:700;">Sign in</a>
-      </div>
-    </div>
+        <div class="auth-divider">
+          <span></span>
+          <p>or register with email</p>
+          <span></span>
+        </div>
 
-    <!-- BACK TO MAP LINK & DISCLAIMER -->
-    <div style="text-align:center; margin-top:20px;">
-      <a href="/" class="btn-text" style="color:var(--color-text-secondary); font-size:13px;">← Back to Map</a>
-      <div style="margin-top:12px;">
-        <a href="/about" class="btn-text" style="font-size:12px; color:var(--color-primary); font-weight:600;">About &amp; Disclaimer</a>
+        <form id="register-form" autocomplete="off" novalidate>
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="name">Full name</label>
+              <input id="name" class="form-input" type="text" autocomplete="name" placeholder="Your name" required />
+            </div>
+            <div class="field">
+              <label for="username">Username</label>
+              <input id="username" class="form-input" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" placeholder="e.g. arun_k" required />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" class="form-input" type="email" autocomplete="email" placeholder="you@example.com" required />
+            </div>
+            <div class="field">
+              <label for="phone">Phone</label>
+              <input id="phone" class="form-input" type="tel" autocomplete="tel" placeholder="+91 98765 43210" required />
+            </div>
+          </div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="password">Password</label>
+              <div class="pw-wrap">
+                <input id="password" class="form-input" type="password" autocomplete="new-password" placeholder="At least 8 characters" required />
+                <button type="button" class="pw-toggle" id="toggle-password" aria-label="Show password" aria-pressed="false"></button>
+              </div>
+            </div>
+            <div class="field">
+              <label for="confirm-password">Confirm password</label>
+              <input id="confirm-password" class="form-input" type="password" autocomplete="new-password" placeholder="Repeat password" required />
+            </div>
+          </div>
+
+          <div class="checkbox-row" style="margin:4px 0 10px">
+            <input id="terms" type="checkbox" required />
+            <label for="terms" style="font-weight:500;text-transform:none;letter-spacing:0;font-size:12px;color:var(--ink-2)">
+              I’ll only add routes and timings I believe are accurate, and I accept the <a href="/about" style="color:var(--primary);font-weight:700">community guidelines</a>.
+            </label>
+          </div>
+
+          <button type="submit" id="submit-register-btn" class="btn btn-primary" style="width:100%">Create account</button>
+        </form>
+
+        <div class="auth-toggle-row">
+          <span>Already have an account?</span>
+          <a href="/login" class="auth-toggle-btn" id="login-link">Sign in</a>
+        </div>
       </div>
-      <p style="margin-top:16px; font-size:11px; line-height:1.5; color:var(--color-text-secondary); opacity:0.85; max-width:380px; margin-left:auto; margin-right:auto;">
-        <strong>Disclaimer:</strong> TN FOR BUS is an independent community transit directory and is not affiliated with, authorized, or endorsed by TNSTC, SETC, or the Government of Tamil Nadu.
-      </p>
-    </div>
+
+      <div class="auth-foot">
+        <p><a href="/about">About &amp; disclaimer</a> · <a href="/">Continue without an account</a></p>
+        <p class="auth-disclaimer">
+          TN FOR BUS is an independent community transit guide. It is not affiliated with, sponsored by, or endorsed by TNSTC, SETC, MTC, or any government agency.
+        </p>
+      </div>
+    </main>
   </div>
 
-  <!-- Scripts -->
   <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/theme.js"></script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", async () => {
-      // If already logged in, redirect to home
-      const status = await TNAuth.getStatus();
-      if (status && status.authenticated) {
-        window.location.href = "/";
-        return;
-      }
-
-      const form = document.getElementById("register-form");
-      const alertBox = document.getElementById("register-alert");
-      const submitBtn = document.getElementById("submit-register-btn");
-
-      form.addEventListener("submit", async (e) => {
-        e.preventDefault();
-        alertBox.style.display = "none";
-
-        const username = document.getElementById("username").value.trim();
-        const password = document.getElementById("password").value;
-        const name = document.getElementById("name").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const phone = document.getElementById("phone").value.trim();
-
-        // Validation
-        if (!username || username.length < 3) {
-          showAlert("Username must be at least 3 characters.");
-          document.getElementById("username").focus();
-          return;
-        }
-        if (!password || password.length < 6) {
-          showAlert("Password must be at least 6 characters.");
-          document.getElementById("password").focus();
-          return;
-        }
-        if (!name || name.length < 2) {
-          showAlert("Please enter your name.");
-          document.getElementById("name").focus();
-          return;
-        }
-        if (!email || !email.includes("@") || !email.includes(".")) {
-          showAlert("Please enter a valid email address.");
-          document.getElementById("email").focus();
-          return;
-        }
-        if (!phone || phone.length < 7) {
-          showAlert("Please enter a valid phone number.");
-          document.getElementById("phone").focus();
-          return;
-        }
-
-        submitBtn.disabled = true;
-        submitBtn.textContent = "Registering...";
-
-        try {
-          await TNOne.post("/api/auth/register", {
-            username: username,
-            password: password,
-            name: name,
-            email: email,
-            phone: phone
-          });
-
-          showAlert("Registration successful! Redirecting to map...", "success");
-          setTimeout(() => {
-            window.location.href = "/";
-          }, 800);
-        } catch (err) {
-          showAlert(err.message || "Registration failed. Please try again.", "error");
-          submitBtn.disabled = false;
-          submitBtn.textContent = "Register";
-        }
-      });
-
-      function showAlert(msg, type = "error") {
-        alertBox.textContent = msg;
-        alertBox.className = `alert alert-${type}`;
-        alertBox.style.display = "block";
-      }
-    });
-  </script>
+  <script src="js/register.js"></script>
 </body>
 </html>

@@ -32,9 +32,13 @@ def submit_report():
 
 
 @bp.route("/recent", methods=["GET"])
+@limiter.limit("60 per minute")
 def recent_reports():
     from app.models.bus import Bus
-    limit = min(int(request.args.get("limit", 20)), 50)
+    try:
+        limit = max(1, min(int(request.args.get("limit", 20)), 50))
+    except (TypeError, ValueError):
+        limit = 20
     buses = Bus.query.order_by(Bus.created_at.desc()).limit(limit).all()
     return ok(data=[b.to_dict() for b in buses])
 

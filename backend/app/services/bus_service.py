@@ -1,8 +1,20 @@
 """
 Bus lookup, creation, and autocomplete stop search using the simplified single-table schema.
 """
+import json
+
 from app.extensions import db
 from app.models.bus import Bus, BusType, predict_reaching_time
+from app.utils.validators import (
+    bounded_float,
+    clean_multiline_text,
+    clean_text,
+    normalize_spots,
+    sanitize_text,
+)
+
+_MAX_ROUTE_STOPS = 250
+_MAX_SEARCH_BUSES = 5000
 
 
 def find_or_create_bus(
@@ -19,9 +31,15 @@ def find_or_create_bus(
     reaching_time: str = None,
     stop_timings: str = None,
 ) -> Bus:
-    bus_name = (bus_name or "").strip()
-    start_stop = (start_stop or "").strip()
-    destination_stop = (destination_stop or "").strip()
+    bus_name = clean_text(bus_name, max_length=255) or ""
+    start_stop = clean_text(start_stop, max_length=255) or "Origin"
+    destination_stop = clean_text(destination_stop, max_length=255) or "Destination"
+    bus_number = clean_text(bus_number, max_length=64)
+    operator = clean_text(operator, max_length=255)
+    bus_type = bus_type if bus_type in BusType.ALL else BusType.GOVERNMENT
+    boarded_stops = clean_multiline_text(boarded_stops, max_length=2000)
+    bus_timings = sanitize_text(bus_timings, max_length=500) or None
+    reaching_time = clean_text(reaching_time, max_length=64)
 
     query = Bus.query.filter(
         Bus.bus_name.ilike(bus_name),
@@ -29,41 +47,46 @@ def find_or_create_bus(
         Bus.destination_stop.ilike(destination_stop),
     )
     if bus_number:
-        query = query.filter(Bus.bus_number == bus_number.strip())
+        query = query.filter(Bus.bus_number == bus_number)
+
+    fare = bounded_float(bus_fare, 0, 100000)
+    distance = bounded_float(distance_km, 0, 10000)
+    cleaned_spots = normalize_spots(stop_timings)
+    spots_json = json.dumps(cleaned_spots) if cleaned_spots else None
 
     bus = query.first()
     if bus:
         # Update timings or fare if newly provided
         if bus_timings and not bus.bus_timings:
             bus.bus_timings = bus_timings
-        if stop_timings and not bus.stop_timings:
-            bus.stop_timings = stop_timings
-        if bus_fare and not bus.bus_fare:
-            bus.bus_fare = bus_fare
-        if distance_km and not bus.distance_km:
-            bus.distance_km = distance_km
+        if spots_json and not bus.stop_timings:
+            bus.stop_timings = spots_json
+        if fare is not None and not bus.bus_fare:
+            bus.bus_fare = fare
+        if distance is not None and not bus.distance_km:
+            bus.distance_km = distance
         if reaching_time and not bus.reaching_time:
             bus.reaching_time = reaching_time
         return bus
 
     # Auto-predict reaching time if not provided
-    if not reaching_time and distance_km and bus_timings:
+    if not reaching_time and distance and bus_timings:
         first_time = [t.strip() for t in bus_timings.split(",") if t.strip()][0]
-        reaching_time = predict_reaching_time(first_time, distance_km, bus_type)
+        reaching_time = predict_reaching_time(first_time, distance, bus_type)
 
     bus = Bus(
         bus_name=bus_name,
-        bus_number=bus_number.strip() if bus_number else None,
-        operator=operator.strip() if operator else (bus_type or "Government"),
+        bus_number=bus_number,
+        operator=operator or (bus_type or "Government"),
         bus_type=bus_type or "Government",
         start_stop=start_stop,
         destination_stop=destination_stop,
-        boarded_stops=boarded_stops.strip() if boarded_stops else None,
-        bus_timings=bus_timings.strip() if bus_timings else None,
-        bus_fare=float(bus_fare) if bus_fare else 20.0,
-        distance_km=float(distance_km) if distance_km else None,
+        boarded_stops=boarded_stops,
+        bus_timings=bus_timings,
+        bus_fare=fare if fare is not None else 20.0,
+        distance_km=distance,
         reaching_time=reaching_time,
-        stop_timings=stop_timings.strip() if stop_timings else None,
+        stop_timings=spots_json,
     )
     db.session.add(bus)
     db.session.flush()
@@ -78,10 +101,11 @@ def search_stops(query: str, limit: int = 10):
     Autocomplete-style stop search across start_stop, destination_stop,
     and comma-separated boarded_stops directly from the buses table.
     """
-    if not query or not query.strip():
+    query = sanitize_text(query or "", max_length=80)
+    if not query:
         return []
 
-    buses = Bus.query.all()
+    buses = Bus.query.order_by(Bus.id).limit(_MAX_SEARCH_BUSES).all()
     seen = set()
     results = []
 
@@ -108,16 +132,21 @@ def add_stop_to_bus(
     Inserts or updates a stop (with optional timing) between existing stops of an existing bus.
     Updates boarded_stops and stop_timings in the database.
     """
-    import json
     from app.models.bus import format_time_ampm, parse_time_to_minutes
 
-    clean_stop = (stop_name or "").strip()
+    clean_stop = sanitize_text(stop_name or "", max_length=255)
     if not clean_stop:
         return bus
 
-    # Get current spots list
-    current_spots = bus.get_stop_timings_list()
-    clean_time = format_time_ampm(stop_time) if stop_time else ""
+    # Get current spots list (bounded to keep a route small even if data was
+    # written before validation existed).
+    current_spots = bus.get_stop_timings_list()[:_MAX_ROUTE_STOPS]
+    if len(current_spots) >= _MAX_ROUTE_STOPS:
+        return bus
+
+    clean_time = format_time_ampm(sanitize_text(stop_time, max_length=32)) if stop_time else ""
+    after_stop = sanitize_text(after_stop or "", max_length=255)
+    before_stop = sanitize_text(before_stop or "", max_length=255)
 
     # Check if this stop is already in current_spots
     existing_idx = -1

@@ -2,207 +2,316 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>Add a Bus — TN FOR BUS</title>
-  <meta name="description" content="Contribute bus routes and schedules to TN FOR BUS, an independent community transit network for Tamil Nadu." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Add a bus — TN FOR BUS</title>
+  <meta name="description" content="Contribute bus routes, stopping points, timings and fares to TN FOR BUS, an independent community transit guide for Tamil Nadu." />
+  <meta name="theme-color" content="#0b6e4f" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="robots" content="index, follow" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/responsive.css" />
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <script src="js/theme-boot.js"></script>
 </head>
 
 <body>
-  <div class="app-shell">
-    <!-- TOP BAR -->
+  <a class="skip-link" href="#report-form">Skip to form</a>
+
+  <div class="app-shell app-shell--wide">
     <header class="topbar">
       <div class="brand-area">
-        <a href="/" class="logo-placeholder" title="Home">TN</a>
+        <a href="/" class="logo-placeholder" title="TN FOR BUS home">TN</a>
         <div class="brand-text-block">
           <a href="/" class="brand-title">TN FOR BUS</a>
           <span class="brand-tagline">Community-Powered Bus Network</span>
         </div>
       </div>
+
+      <nav class="nav-links" aria-label="Main navigation">
+        <a class="nav-link" href="/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 10.5 8.5-7 8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5.5h5V20"/></svg>
+          Map
+        </a>
+        <a class="nav-link" href="/search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+          Search
+        </a>
+        <a class="nav-link active" href="/report" aria-current="page">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Add bus
+        </a>
+        <a class="nav-link" href="/about">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 11v5"/><path d="M12 8h.01"/></svg>
+          About
+        </a>
+      </nav>
+
       <div class="topbar-actions">
-        <div id="topbar-auth"></div>
+        <div class="theme-mount"></div>
+        <div data-auth-slot></div>
       </div>
     </header>
 
-    <!-- AUTH GATE (If not signed in) -->
-    <div id="auth-gate" class="state-box" style="display:none; margin-top:24px;">
-      <div class="state-icon">🔒</div>
-      <h2 class="state-title">Sign in to add a bus</h2>
-      <p class="state-desc">Your contributions help bus riders across Tamil Nadu discover accurate, community-powered bus timings.</p>
-      <button class="google-btn" style="max-width:320px; margin:0 auto;" onclick="window.location.href='/login'">
-        <span>Sign in to continue</span>
-      </button>
-    </div>
+    <main>
+      <section class="page-hero">
+        <span class="page-head__eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px"><path d="M12 5v14M5 12h14"/></svg>
+          Community contribution
+        </span>
+        <h1>Add a bus to the network</h1>
+        <p>Share the route, every stop in between, and the timings you actually see. A few details from you make the next commute easier for thousands of riders.</p>
+        <div class="hero-stats">
+          <span class="preview-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 17V7a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v10"/><path d="M4 13h16"/><path d="M7 20v-2M17 20v-2"/><circle cx="8" cy="16.5" r=".6"/><circle cx="16" cy="16.5" r=".6"/></svg>
+            Route + stops
+          </span>
+          <span class="preview-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+            Daily timings
+          </span>
+          <span class="preview-chip">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M16.5 7.5c0-1.4-2-2.5-4.5-2.5S7.5 6.1 7.5 7.5 9.5 10 12 10s4.5 1.1 4.5 2.5S14.5 15 12 15s-4.5-1.1-4.5-2.5"/></svg>
+            Fare
+          </span>
+        </div>
+      </section>
 
-    <!-- FORM CARD -->
-    <main id="report-form-card" class="form-card" style="display:none;">
-      <div class="form-heading">
-        <h1>Add a bus</h1>
-        <p>Share bus details, timings, and fare to help fellow commuters.</p>
+      <!-- AUTH GATE -->
+      <div id="auth-gate" class="state-box" hidden>
+        <div class="state-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:30px;height:30px"><rect x="4.5" y="10" width="15" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/><path d="M12 14v2.5"/></svg>
+        </div>
+        <p class="state-title">Sign in to add a bus</p>
+        <p class="state-desc">Your contributions help bus riders across Tamil Nadu discover accurate, community-powered bus timings. Sign in with Google to continue.</p>
+        <a class="btn btn-primary" id="auth-gate-login" href="/login?redirect=%2Freport">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h4a1 1 0 0 1 1 1v16a1 1 0 0 1-1 1h-4"/><path d="m10 17 5-5-5-5"/><path d="M15 12H3"/></svg>
+          Sign in to continue
+        </a>
       </div>
 
-      <!-- INLINE ALERT -->
-      <div id="form-alert" class="alert"></div>
+      <!-- FORM -->
+      <div id="report-form-card" class="report-layout" hidden>
+        <div>
+          <form id="report-form" class="form-card" novalidate>
+            <div id="form-alert" class="alert" role="status" aria-live="polite"></div>
 
-      <form id="report-form">
-        <!-- BUS NAME -->
-        <div class="field">
-          <label for="bus-name-input">
-            <span>Bus Name</span>
-          </label>
-          <input id="bus-name-input" type="text" placeholder="e.g. Mofussil Express" required />
-        </div>
+            <!-- 1. BUS DETAILS -->
+            <div class="section-title"><span class="step-no">1</span>Bus details</div>
 
-        <!-- BUS NUMBER & OPERATOR -->
-        <div style="display:grid; grid-template-columns: 1fr 1fr; gap:12px;">
-          <div class="field">
-            <label for="bus-number-input">
-              <span>Bus Number</span>
-              <span class="optional-tag">Optional</span>
-            </label>
-            <input id="bus-number-input" type="text" placeholder="e.g. 12A" />
-          </div>
+            <div class="field">
+              <label for="bus-name-input">Bus name</label>
+              <input id="bus-name-input" class="form-input" type="text" placeholder="e.g. Mofussil Express" autocomplete="off" required />
+            </div>
 
-          <div class="field">
-            <label for="operator-select">
-              <span>Operator</span>
-              <span class="optional-tag">Optional</span>
-            </label>
-            <select id="operator-select">
-              <option value="">Select Operator</option>
-              <option value="TNSTC">TNSTC (Govt)</option>
-              <option value="SETC">SETC (Express)</option>
-              <option value="MTC">MTC (Chennai)</option>
-              <option value="Private">Private</option>
-            </select>
-          </div>
-        </div>
-
-        <!-- ROUTE SPOTS & TIMINGS -->
-        <div class="field">
-          <label>
-            <span>Route Spots &amp; Timings</span>
-          </label>
-          <p class="field-help">Add the starting spot, any intermediate spots, and destination spot with their respective timings.</p>
-
-          <div id="spots-container" class="spots-container">
-            <!-- Starting Spot -->
-            <div class="spot-card start-spot">
-              <div class="spot-header">
-                <span class="spot-marker-badge start">🟢 Starting Spot (Boarded At)</span>
+            <div class="form-grid-2">
+              <div class="field">
+                <label for="bus-number-input">
+                  Bus number
+                  <span class="optional-tag">Optional</span>
+                </label>
+                <input id="bus-number-input" class="form-input" type="text" placeholder="e.g. TN 38 N 1234" autocomplete="off" />
               </div>
-              <div class="spot-inputs-row">
-                <input id="boarding-stop-input" class="spot-name-input" type="text" placeholder="e.g. Gandhipuram" autocomplete="off" required />
-                <div class="spot-time-wrap">
-                  <input id="boarding-time-input" class="spot-time-input" type="time" required />
-                  <span id="boarding-time-ampm" class="timing-ampm-pill">--:-- --</span>
+
+              <div class="field">
+                <label for="operator-select">
+                  Operator
+                  <span class="optional-tag">Optional</span>
+                </label>
+                <select id="operator-select" class="form-select">
+                  <option value="">Select</option>
+                  <option value="TNSTC">TNSTC (Government)</option>
+                  <option value="SETC">SETC (Express)</option>
+                  <option value="MTC">MTC (Chennai)</option>
+                  <option value="Private">Private operator</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="field">
+              <label for="bus-type-select">Service type</label>
+              <select id="bus-type-select" class="form-select">
+                <option value="Government" selected>Government (ordinary)</option>
+                <option value="Private">Private</option>
+                <option value="Deluxe">Deluxe</option>
+                <option value="Fast">Fast / express</option>
+              </select>
+              <p class="field-help">Used to estimate travel time between stops.</p>
+            </div>
+
+            <div class="form-divider"></div>
+
+            <!-- 2. ROUTE -->
+            <div class="section-title"><span class="step-no">2</span>Route stops &amp; timings</div>
+            <p class="field-help" style="margin-top:-6px;margin-bottom:12px">Start with where you boarded, add the stops in order, then the destination.</p>
+
+            <div class="spots-container">
+              <div class="spot-card start-spot">
+                <div class="spot-header">
+                  <span class="spot-marker-badge start">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:12px;height:12px"><circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>
+                    Starting spot
+                  </span>
+                </div>
+                <div class="spot-inputs-row">
+                  <input id="boarding-stop-input" class="spot-name-input" type="text" placeholder="e.g. Gandhipuram" autocomplete="off" autocapitalize="words" spellcheck="false" required />
+                  <div class="spot-time-wrap">
+                    <input id="boarding-time-input" class="spot-time-input" type="time" aria-label="Starting spot departure time" required />
+                    <span id="boarding-time-ampm" class="timing-ampm-pill">--:-- --</span>
+                  </div>
+                </div>
+              </div>
+
+              <div id="intermediate-spots-list" class="spots-container"></div>
+
+              <button type="button" id="add-spot-btn" class="btn btn-ghost btn-sm" style="justify-self:start">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                Add intermediate stop
+              </button>
+
+              <div class="spot-card dest-spot">
+                <div class="spot-header">
+                  <span class="spot-marker-badge dest">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:12px;height:12px"><path d="M12 21s-6.5-5.4-6.5-10.5a6.5 6.5 0 1 1 13 0C18.5 15.6 12 21 12 21Z"/><circle cx="12" cy="10.5" r="2.2"/></svg>
+                    Destination
+                  </span>
+                </div>
+                <div class="spot-inputs-row">
+                  <input id="destination-stop-input" class="spot-name-input" type="text" placeholder="e.g. Ukkadam" autocomplete="off" autocapitalize="words" spellcheck="false" required />
+                  <div class="spot-time-wrap">
+                    <input id="destination-time-input" class="spot-time-input" type="time" aria-label="Destination arrival time" />
+                    <span id="destination-time-ampm" class="timing-ampm-pill">--:-- --</span>
+                  </div>
                 </div>
               </div>
             </div>
 
-            <!-- Intermediate Spots Container -->
-            <div id="intermediate-spots-list" class="spots-container" style="margin-top:0;"></div>
+            <div class="form-divider"></div>
 
-            <button type="button" id="add-spot-btn" class="btn-text" style="font-weight:700; color:var(--color-primary); display:inline-flex; align-items:center; gap:6px; margin: 4px 0 6px;">
-              <span>＋ Add Intermediate Spot with Timing</span>
-            </button>
+            <!-- 3. SCHEDULE & FARE -->
+            <div class="section-title"><span class="step-no">3</span>Schedule &amp; fare</div>
 
-            <!-- Destination Spot -->
-            <div class="spot-card dest-spot">
-              <div class="spot-header">
-                <span class="spot-marker-badge dest">🔴 Destination Spot</span>
-              </div>
-              <div class="spot-inputs-row">
-                <input id="destination-stop-input" class="spot-name-input" type="text" placeholder="e.g. Ukkadam" autocomplete="off" required />
-                <div class="spot-time-wrap">
-                  <input id="destination-time-input" class="spot-time-input" type="time" />
-                  <span id="destination-time-ampm" class="timing-ampm-pill">--:-- --</span>
-                </div>
-              </div>
+            <div class="field">
+              <label>
+                Additional trip timings
+                <span class="optional-tag">Optional</span>
+              </label>
+              <p class="field-help">If this bus makes several trips a day, add the other departure times from the starting spot.</p>
+              <div id="timings-container" class="timings-container"></div>
+              <button type="button" id="add-timing-btn" class="btn btn-ghost btn-sm" style="justify-self:start">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                Add another trip
+              </button>
             </div>
-          </div>
+
+            <div class="field">
+              <label for="fare-input">Bus fare</label>
+              <div class="input-with-icon">
+                <span class="prefix">₹</span>
+                <input id="fare-input" class="form-input" type="number" min="0" step="0.5" inputmode="decimal" placeholder="25" required />
+              </div>
+              <p class="field-help">Full route fare in rupees. Enter 0 if it is free.</p>
+            </div>
+
+            <div class="form-divider"></div>
+
+            <!-- 4. PHOTOS -->
+            <div class="section-title"><span class="step-no">4</span>Photos</div>
+            <div class="field">
+              <label for="bus-photos">
+                Bus or route board photos
+                <span class="optional-tag">Optional</span>
+              </label>
+              <label for="bus-photos" class="photo-upload-zone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 8.5h3l1.5-2h7l1.5 2h3a1 1 0 0 1 1 1V18a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V9.5a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13.5" r="3.4"/></svg>
+                <strong>Select photos</strong>
+                <span>JPG, PNG, WEBP — up to 5&nbsp;MB each, max 8</span>
+              </label>
+              <input id="bus-photos" type="file" accept="image/*" multiple hidden />
+              <div id="photo-previews" class="photo-previews"></div>
+            </div>
+
+            <div class="form-actions">
+              <button type="reset" id="reset-btn" class="btn btn-ghost">Clear form</button>
+              <button type="submit" id="submit-btn" class="btn btn-primary">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+                Add bus
+              </button>
+            </div>
+          </form>
+
+          <p class="disclaimer">
+            <strong>Disclaimer:</strong> TN FOR BUS is an independent, community-maintained transit guide. It is not affiliated with, authorised, or endorsed by TNSTC, SETC, or the Government of Tamil Nadu. <a href="/about">About &amp; disclaimers</a>
+          </p>
         </div>
 
-        <!-- ADDITIONAL TIMINGS (Optional) -->
-        <div class="field" style="margin-top: 14px;">
-          <label>
-            <span>Additional Trip Timings</span>
-            <span class="optional-tag">Optional</span>
-          </label>
-          <p class="field-help">If this bus runs multiple daily trips on this route, add the other departure times.</p>
-          <div id="timings-container" class="timings-container"></div>
-          <button type="button" id="add-timing-btn" class="btn-text">
-            <span>＋ Add another trip timing</span>
-          </button>
-        </div>
+        <aside class="report-aside" aria-label="Live preview and tips">
+          <section class="form-card report-preview">
+            <span class="preview-eyebrow">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:12px;height:12px"><path d="M2.5 12s3.5-6.5 9.5-6.5S21.5 12 21.5 12s-3.5 6.5-9.5 6.5S2.5 12 2.5 12Z"/><circle cx="12" cy="12" r="2.6"/></svg>
+              Live preview
+            </span>
+            <h2 id="preview-title">Your route</h2>
+            <p class="preview-sub" id="preview-sub">Fill in the details to preview how riders will see this bus.</p>
 
+            <div class="preview-timeline" id="preview-timeline">
+              <p class="preview-empty">No stops added yet.</p>
+            </div>
 
-        <!-- FARE -->
-        <div class="field">
-          <label for="fare-input">
-            <span>Bus Fare</span>
-          </label>
-          <div class="input-with-icon">
-            <span class="prefix">₹</span>
-            <input id="fare-input" type="number" min="0" step="0.5" placeholder="25" required />
-          </div>
-        </div>
+            <div class="preview-meta">
+              <span class="preview-chip" id="preview-fare">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v18"/><path d="M16.5 7.5c0-1.4-2-2.5-4.5-2.5S7.5 6.1 7.5 7.5 9.5 10 12 10s4.5 1.1 4.5 2.5S14.5 15 12 15s-4.5-1.1-4.5-2.5"/></svg>
+                Fare —
+              </span>
+              <span class="preview-chip" id="preview-count">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 21s-6.5-5.4-6.5-10.5a6.5 6.5 0 1 1 13 0C18.5 15.6 12 21 12 21Z"/></svg>
+                0 stops
+              </span>
+              <span class="preview-chip" id="preview-trips">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="8.5"/><path d="M12 7.5V12l3 2"/></svg>
+                1 trip
+              </span>
+            </div>
+          </section>
 
-        <!-- PHOTOS -->
-        <div class="field">
-          <label>
-            <span>Bus Photos</span>
-            <span class="optional-tag">Optional</span>
-          </label>
-          <p class="field-help">Upload clear photos of the bus or route board if available.</p>
-          
-          <label for="bus-photos" class="photo-upload-zone">
-            <span style="font-size:24px;">📷</span>
-            <span style="font-weight:700; font-size:14px;">Select photos</span>
-            <span style="font-size:11px; color:var(--color-text-secondary);">JPG, PNG, WEBP (up to 5MB each)</span>
-          </label>
-          <input id="bus-photos" type="file" accept="image/*" multiple style="display:none;" />
-
-          <div id="photo-previews" class="photo-previews"></div>
-        </div>
-
-        <!-- SUBMIT -->
-        <button type="submit" id="submit-btn" class="btn-primary" style="margin-top:12px;">
-          ADD BUS
-        </button>
-        <div style="margin-top: 24px; text-align: center; font-size: 11px; line-height: 1.5; color: var(--color-text-secondary); opacity: 0.85;">
-          <strong>Disclaimer:</strong> TN FOR BUS is an independent, community-driven transit directory. It is not affiliated with, authorized, or endorsed by TNSTC, SETC, or the Government of Tamil Nadu. <a href="/about" style="color:var(--color-primary); text-decoration:underline;">About &amp; Disclaimer</a>
-        </div>
-      </form>
+          <section class="content-card report-tips">
+            <div class="content-card__ic">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.5 18h5"/><path d="M10 21h4"/><path d="M12 3a6 6 0 0 0-3.6 10.8c.6.4 1.1 1.2 1.1 2V16h5v-.2c0-.8.5-1.6 1.1-2A6 6 0 0 0 12 3Z"/></svg>
+            </div>
+            <h2>Tips for accurate reports</h2>
+            <ul>
+              <li>Use the same stop names riders see on the board or app.</li>
+              <li>Add stops in travel order — the destination is always last.</li>
+              <li>Enter the time the bus leaves each stop, not when you arrived.</li>
+              <li>One route per submission keeps search results clean and reliable.</li>
+            </ul>
+          </section>
+        </aside>
+      </div>
     </main>
-
-    <!-- BOTTOM NAVIGATION -->
-    <nav class="bottom-nav">
-      <a class="nav-item" href="/">
-        <span class="nav-icon">⌂</span>
-        <span>Home</span>
-      </a>
-      <a class="nav-item" href="/search">
-        <span class="nav-icon">⌕</span>
-        <span>Search</span>
-      </a>
-      <a class="nav-item active" href="/report">
-        <span class="nav-icon">＋</span>
-        <span>Add Bus</span>
-      </a>
-      <a class="nav-item" href="/profile">
-        <span class="nav-icon">👤</span>
-        <span>Profile</span>
-      </a>
-    </nav>
   </div>
 
-  <!-- Scripts -->
+  <nav class="bottom-nav" aria-label="Primary navigation">
+    <a class="nav-item" href="/">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 10.5 8.5-7 8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5.5h5V20"/></svg></span>
+      <span>Home</span>
+    </a>
+    <a class="nav-item" href="/search">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg></span>
+      <span>Search</span>
+    </a>
+    <a class="nav-item nav-item--cta active" href="/report" aria-current="page">
+      <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+      <span>Add bus</span>
+    </a>
+    <a class="nav-item" href="/profile">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></span>
+      <span>Profile</span>
+    </a>
+  </nav>
+
   <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/theme.js"></script>
   <script src="js/report.js"></script>

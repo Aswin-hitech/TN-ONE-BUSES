@@ -2,1084 +2,283 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
   <title>TN FOR BUS — Community-Powered Bus Network</title>
-  <meta name="description" content="Discover bus routes, schedules, and live timings across Tamil Nadu with TN FOR BUS, an independent community transit network." />
+  <meta name="description" content="Find bus routes, timings, and fares across Tamil Nadu on a live map. TN FOR BUS is an independent, community-built transit directory." />
+  <meta name="theme-color" content="#0b6e4f" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="robots" content="index, follow" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <link rel="preconnect" href="https://unpkg.com" crossorigin />
+  <link rel="preconnect" href="https://tile.openstreetmap.org" crossorigin />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/responsive.css" />
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
-
-  <!-- Leaflet CSS (Pinned Stable Versions) -->
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.css" />
-  <link rel="stylesheet" href="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.css" />
+  <script src="js/theme-boot.js"></script>
 </head>
 
 <body>
-  <div class="map-screen">
-    <!-- FULL VIEWPORT MAP -->
-    <div id="map"></div>
+  <a class="skip-link" href="#search-card">Skip to route search</a>
 
-    <!-- FLOATING BRAND & SEARCH CONTAINER -->
-    <div class="map-floating-top">
-      <div class="map-floating-header">
-        <div class="brand-area">
-          <div class="logo-placeholder">TN</div>
-          <div class="brand-text-block">
-            <span class="brand-title">TN FOR BUS</span>
-            <span class="brand-tagline">Community-Powered Bus Network</span>
+  <div class="map-shell">
+    <div id="map" role="application" aria-label="Map of Tamil Nadu bus routes"></div>
+
+    <!-- Floating brand + account -->
+    <header class="map-topbar">
+      <a class="map-brand-card" href="/" aria-label="TN FOR BUS home">
+        <span class="logo-placeholder">TN</span>
+        <span class="brand-text-block">
+          <span class="brand-title">TN FOR BUS</span>
+          <span class="brand-tagline">Community-Powered Bus Network</span>
+        </span>
+      </a>
+      <div class="map-top-actions">
+        <div class="theme-mount" aria-hidden="false"></div>
+        <div id="topbar-auth" data-auth-slot></div>
+      </div>
+    </header>
+
+    <!-- Desktop floating panel -->
+    <aside class="map-panel" id="map-panel" aria-label="Route search and results">
+      <div id="panel-search-slot">
+        <section class="search-card" id="search-card" aria-label="Search buses">
+          <div class="loc-stack">
+            <span class="loc-connector" aria-hidden="true"></span>
+
+            <div class="loc-field">
+              <span class="loc-dot start" aria-hidden="true"></span>
+              <input
+                class="loc-input"
+                id="origin-input"
+                type="text"
+                placeholder="From — your stop or area"
+                autocomplete="off"
+                autocapitalize="words"
+                spellcheck="false"
+                aria-label="Starting stop"
+              />
+              <button type="button" class="loc-action" id="clear-origin" aria-label="Clear starting stop" hidden>
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+              </button>
+            </div>
+
+            <div class="loc-field">
+              <span class="loc-dot end" aria-hidden="true"></span>
+              <input
+                class="loc-input"
+                id="destination-input"
+                type="text"
+                placeholder="Where to?"
+                autocomplete="off"
+                autocapitalize="words"
+                spellcheck="false"
+                aria-label="Destination stop"
+              />
+              <button type="button" class="loc-action" id="swap-locations" aria-label="Swap start and destination">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 4v14"/><path d="m4 7 3-3 3 3"/><path d="M17 20V6"/><path d="m14 17 3 3 3-3"/></svg>
+              </button>
+            </div>
           </div>
-        </div>
-        <div class="topbar-actions">
-          <div id="topbar-auth"></div>
-        </div>
+
+          <div class="quick-row" id="quick-row" aria-label="Suggested routes"></div>
+
+          <div class="search-actions">
+            <button class="btn btn-primary" id="search-route-btn" type="button">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+              Search buses
+            </button>
+          </div>
+        </section>
       </div>
 
-      <!-- SOURCE-DESTINATION BOX -->
-      <div class="search-card">
-        <div class="location-row">
-          <div class="route-connector-line"></div>
-          
-          <div class="location-line">
-            <span class="location-dot start"></span>
-            <input id="origin-input" type="text" placeholder="From / Your location" autocomplete="off" />
-          </div>
-
-          <div class="location-divider"></div>
-
-          <div class="location-line">
-            <span class="location-dot destination"></span>
-            <input id="destination-input" type="text" placeholder="Where to?" autocomplete="off" />
-          </div>
+      <div class="recent-block" id="recent-block" hidden>
+        <div class="recent-title">
+          <span>Recent searches</span>
+          <button type="button" class="btn-text" id="clear-recents">Clear</button>
         </div>
-
-        <button id="search-route-btn" class="search-button">
-          🔍 Search Buses
-        </button>
+        <div class="recent-chips" id="recent-chips"></div>
       </div>
+
+      <div id="panel-results-slot"></div>
+
+      <section class="explore-card" id="explore-card">
+        <span class="explore-card__eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px"><path d="m12 3 1.6 4.4L18 9l-4.4 1.6L12 15l-1.6-4.4L6 9l4.4-1.6L12 3Z"/><path d="m18.5 14 .8 2.2 2.2.8-2.2.8-.8 2.2-.8-2.2-2.2-.8 2.2-.8.8-2.2Z"/></svg>
+          Plan a trip
+        </span>
+        <h2>Every community-reported bus, on one map.</h2>
+        <p>Type a start and destination to see upcoming departures, stop-by-stop timings and fares reported by fellow travellers.</p>
+        <div class="explore-card__actions">
+          <button type="button" class="btn btn-primary btn-sm" data-use-location>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/></svg>
+            Use my location
+          </button>
+          <a class="btn btn-secondary btn-sm" href="/report">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+            Add a bus
+          </a>
+          <a class="btn btn-ghost btn-sm" href="/search">Browse all</a>
+        </div>
+      </section>
+    </aside>
+
+    <!-- Mobile floating search -->
+    <div class="mobile-search" id="mobile-search">
+      <div id="mobile-search-slot"></div>
     </div>
 
-    <!-- FLOATING ACTIONS OVER MAP -->
-    <div class="map-floating-actions">
-      <button id="locate-btn" class="fab-btn" title="Use my current location">
-        <span>📍</span>
-        <span>My Location</span>
-      </button>
+    <!-- Results panel (moved into the mobile sheet on small screens) -->
+    <section class="results-panel" id="results-panel" hidden aria-live="polite">
+      <div class="results-head">
+        <div class="results-head__row">
+          <div class="results-head__title-wrap">
+            <h2 class="results-title" id="results-title">Bus results</h2>
+            <div class="results-sub" id="results-sub"></div>
+          </div>
+          <div class="results-head__tools">
+            <button type="button" class="tool-btn" id="share-route" aria-label="Share this route">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="18" cy="5.5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="18.5" r="2.5"/><path d="m8.2 10.8 7.6-4M8.2 13.2l7.6 4"/></svg>
+            </button>
+            <button type="button" class="tool-btn" id="refresh-results" aria-label="Refresh results">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 7v5h-5"/><path d="M4 17v-5h5"/><path d="M6.5 8.5A7.5 7.5 0 0 1 19.5 12M4.5 12a7.5 7.5 0 0 0 13 3.5"/></svg>
+            </button>
+            <button type="button" class="tool-btn" id="collapse-results" aria-label="Close results">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 6l12 12M18 6 6 18"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="sort-row" id="sort-row" role="tablist" aria-label="Sort results">
+          <button type="button" class="sort-btn active" data-sort="soonest" role="tab" aria-selected="true">Soonest</button>
+          <button type="button" class="sort-btn" data-sort="fare" role="tab" aria-selected="false">Lowest fare</button>
+          <button type="button" class="sort-btn" data-sort="name" role="tab" aria-selected="false">Bus name</button>
+        </div>
+      </div>
+      <div class="results-body" id="results-list"></div>
+      <div class="results-foot">
+        <a class="btn btn-primary" id="report-route-btn" href="/report">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Add a bus for this route
+        </a>
+      </div>
+      <p class="results-foot__note">
+        Community-reported timings can change. Verify with the operator. <a href="/about">About &amp; disclaimers</a>
+      </p>
+    </section>
 
-      <a href="/report" class="fab-btn primary" title="Add a Bus">
-        <span>＋</span>
-        <span>Add Bus</span>
+    <!-- Floating actions -->
+    <div class="map-fabs" id="map-fabs">
+      <button type="button" class="fab fab--round" id="locate-btn" title="Use my current location" aria-label="Use my current location">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3"/><circle cx="12" cy="12" r="7"/></svg>
+      </button>
+      <a class="fab fab--primary" href="/report" title="Add a bus">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+        <span>Add bus</span>
       </a>
     </div>
 
-    <!-- BOTTOM BUS PANEL (Expandable / Collapsible Bottom Sheet) -->
-    <div id="bus-bottom-panel" class="bottom-bus-panel">
-      <!-- Handle for dragging/tapping -->
-      <div class="bus-panel-handle-bar" id="bus-panel-handle">
-        <div class="bus-panel-handle-pill"></div>
-      </div>
-
-      <!-- Panel Header (Tappable to toggle collapse/expand) -->
-      <div class="bus-panel-header" id="bus-panel-header">
-        <div class="bus-panel-header-main">
-          <div class="bus-panel-route" id="panel-route-title">Select route to see buses</div>
-          <div class="bus-panel-distance" id="panel-distance-badge">0.0 km</div>
-        </div>
-        <div class="bus-panel-toggle-indicator" id="panel-toggle-btn">
-          <span class="toggle-icon">▲</span>
-          <span class="toggle-text">View Buses</span>
-        </div>
-      </div>
-
-      <!-- Panel Body (Scrollable bus results) -->
-      <div class="bus-panel-body" id="bus-panel-body">
-        <!-- Next Buses Section -->
-        <div class="bus-panel-section-title">
-          <span>NEXT BUSES</span>
-          <span id="panel-bus-count" style="font-weight: normal; color: var(--color-text-muted);">0 found</span>
-        </div>
-
-        <!-- Bus List Container -->
-        <div id="panel-bus-list" class="panel-bus-list">
-          <div class="panel-empty-state">
-            <div style="font-size: 28px; margin-bottom: 6px;">🗺️</div>
-            <p>Select From and To locations above to find buses.</p>
-          </div>
-        </div>
-
-        <!-- Add Bus CTA within panel -->
-        <div class="panel-footer-action">
-          <a id="panel-add-bus-btn" href="/report" class="btn-primary" style="padding: 10px 16px; font-size: 14px;">
-            ＋ Add Bus for this route
-          </a>
-          <div style="margin-top: 8px; text-align: center; font-size: 10px; color: var(--color-text-secondary); opacity: 0.85;">
-            TN FOR BUS is a community-driven transit directory. Not affiliated with TNSTC, SETC, or the Govt. of Tamil Nadu. <a href="/about" style="color:var(--color-primary); text-decoration:underline;">About &amp; Disclaimers</a>
-          </div>
-        </div>
-      </div>
+    <div class="map-legend" aria-hidden="true">
+      <span><i class="start"></i> Start</span>
+      <span><i class="end"></i> Destination</span>
+      <span><i class="fresh"></i> Community reported</span>
     </div>
 
-    <!-- BOTTOM NAVIGATION -->
-    <nav class="bottom-nav">
-      <a class="nav-item active" href="/">
-        <span class="nav-icon">⌂</span>
+    <!-- Mobile bottom navigation -->
+    <nav class="bottom-nav" aria-label="Primary navigation">
+      <a class="nav-item active" href="/" aria-current="page">
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 10.5 8.5-7 8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5.5h5V20"/></svg></span>
         <span>Home</span>
       </a>
       <a class="nav-item" href="/search">
-        <span class="nav-icon">⌕</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg></span>
         <span>Search</span>
       </a>
-      <a class="nav-item" href="/report">
-        <span class="nav-icon">＋</span>
-        <span>Add Bus</span>
+      <a class="nav-item nav-item--cta" href="/report">
+        <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+        <span>Add bus</span>
       </a>
       <a class="nav-item" href="/profile">
-        <span class="nav-icon">👤</span>
+        <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></span>
         <span>Profile</span>
       </a>
     </nav>
+
+    <!-- Mobile results sheet -->
+    <section class="sheet" id="results-sheet" aria-label="Bus results">
+      <div class="sheet__grab" aria-hidden="true"></div>
+      <div class="sheet__header" id="sheet-header">
+        <div class="sheet__title-wrap">
+          <div class="sheet__eyebrow" id="sheet-eyebrow">TN FOR BUS</div>
+          <div class="sheet__title" id="sheet-title">Search a route</div>
+          <div class="sheet__meta" id="sheet-meta">
+            <span class="sheet__handle-hint">Swipe up for buses</span>
+          </div>
+        </div>
+        <button type="button" class="sheet__toggle" id="sheet-toggle" aria-label="Expand results">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 15 6-6 6 6"/></svg>
+          <span>Expand</span>
+        </button>
+      </div>
+      <div class="sheet__body">
+        <div class="sheet__empty" id="sheet-empty">
+          <strong>Find your next bus</strong>
+          <p>Enter a start and destination above, then tap Search. Community timings appear here.</p>
+          <a class="btn btn-secondary btn-sm" href="/report">Add the first bus</a>
+        </div>
+        <div id="sheet-results-slot"></div>
+      </div>
+    </section>
   </div>
 
-  <!-- ADD STOP MODAL -->
-  <div id="add-stop-modal" class="modal-overlay" style="display: none;">
-    <div class="modal-dialog">
+  <!-- Add stop modal -->
+  <div id="add-stop-modal" class="modal-overlay" hidden>
+    <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="modal-bus-title">
       <div class="modal-header">
         <div>
-          <h3 id="modal-bus-title" class="modal-title">Add Stop to Bus</h3>
-          <p id="modal-bus-subtitle" class="modal-subtitle">Add a missing stop between current stops</p>
+          <h3 id="modal-bus-title" class="modal-title">Add a stop</h3>
+          <p id="modal-bus-subtitle" class="modal-subtitle">Add a missing stop between current stops.</p>
         </div>
-        <button type="button" id="close-add-stop-modal" class="modal-close-btn" title="Close">&times;</button>
+        <button type="button" id="close-add-stop-modal" class="modal-close-btn" aria-label="Close">&times;</button>
       </div>
 
       <form id="add-stop-form">
         <input type="hidden" id="add-stop-bus-id" />
 
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label class="form-label" for="add-stop-after-select">Insert after which stop?</label>
-          <select id="add-stop-after-select" class="form-select" required>
-            <!-- Dynamically populated with stops -->
-          </select>
-          <span class="form-hint">The new stop will appear immediately after this stop in the route.</span>
+        <div class="field">
+          <label for="add-stop-after-select">Insert after which stop?</label>
+          <select id="add-stop-after-select" class="form-select" required></select>
+          <p class="field-help">The new stop appears immediately after this stop on the route.</p>
         </div>
 
-        <div class="form-group" style="margin-bottom: 14px;">
-          <label class="form-label" for="add-stop-name-input">New Stop / Spot Name</label>
+        <div class="field">
+          <label for="add-stop-name-input">New stop name</label>
           <input id="add-stop-name-input" type="text" class="form-input" placeholder="e.g. Town Hall, Gandhipuram" autocomplete="off" required />
         </div>
 
-        <div class="form-group" style="margin-bottom: 20px;">
-          <label class="form-label" for="add-stop-time-input">Passing / Halting Time (optional)</label>
-          <div style="display: flex; align-items: center; gap: 8px;">
-            <input id="add-stop-time-input" type="time" class="form-input" style="max-width: 140px;" />
+        <div class="field">
+          <label for="add-stop-time-input">Passing time (optional)</label>
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <input id="add-stop-time-input" type="time" class="form-input" style="max-width:150px" />
             <span id="add-stop-time-ampm" class="timing-ampm-pill">--:-- --</span>
           </div>
-          <span class="form-hint">Will be shown in 12-hour AM/PM format across the app.</span>
+          <p class="field-help">Shown in 12-hour AM/PM format across the app.</p>
         </div>
 
-        <div id="add-stop-alert" class="alert" style="display: none; margin-bottom: 14px;"></div>
+        <div id="add-stop-alert" class="alert"></div>
 
         <div class="modal-footer">
-          <button type="button" id="cancel-add-stop-btn" class="btn-text">Cancel</button>
-          <button type="submit" id="submit-add-stop-btn" class="btn-primary" style="width: auto; padding: 10px 20px;">
-            Save Stop to Route
-          </button>
+          <button type="button" id="cancel-add-stop-btn" class="btn btn-ghost">Cancel</button>
+          <button type="submit" id="submit-add-stop-btn" class="btn btn-primary">Save stop</button>
         </div>
       </form>
     </div>
   </div>
 
-  <!-- Scripts (Pinned Stable Versions) -->
   <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/theme.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="https://unpkg.com/leaflet-routing-machine@3.2.12/dist/leaflet-routing-machine.js"></script>
-  <script src="https://unpkg.com/leaflet-control-geocoder@2.4.0/dist/Control.Geocoder.js"></script>
-
-  <script>
-    document.addEventListener("DOMContentLoaded", async () => {
-      // 1. Initialize Auth
-      const authContainer = document.getElementById("topbar-auth");
-      const status = await TNAuth.getStatus();
-      TNAuth.renderTopbarAuth(authContainer, status);
-
-      // 2. Initialize Map (Center of Tamil Nadu)
-      const map = L.map("map", {
-        zoomControl: false
-      }).setView([11.1271, 78.6569], 7);
-
-      L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
-        maxZoom: 19
-      }).addTo(map);
-
-      L.control.zoom({ position: "bottomleft" }).addTo(map);
-
-      let userMarker = null;
-      let routingControl = null;
-      let fallbackRoute = null;
-      let originMarker = null;
-      let destMarker = null;
-
-      const originInput = document.getElementById("origin-input");
-      const destInput = document.getElementById("destination-input");
-      const searchBtn = document.getElementById("search-route-btn");
-      const locateBtn = document.getElementById("locate-btn");
-
-      // Bottom Panel Elements
-      const busPanel = document.getElementById("bus-bottom-panel");
-      const busPanelHeader = document.getElementById("bus-panel-header");
-      const busPanelHandle = document.getElementById("bus-panel-handle");
-      const panelRouteTitle = document.getElementById("panel-route-title");
-      const panelDistanceBadge = document.getElementById("panel-distance-badge");
-      const panelToggleBtn = document.getElementById("panel-toggle-btn");
-      const panelBusList = document.getElementById("panel-bus-list");
-      const panelBusCount = document.getElementById("panel-bus-count");
-      const panelAddBusBtn = document.getElementById("panel-add-bus-btn");
-      const panelBusesMap = new Map();
-
-      // Panel Expand/Collapse Toggle
-      let isPanelExpanded = false;
-      function togglePanel(expand) {
-        if (expand !== undefined) {
-          isPanelExpanded = expand;
-        } else {
-          isPanelExpanded = !isPanelExpanded;
-        }
-        busPanel.classList.toggle("expanded", isPanelExpanded);
-        const toggleIcon = panelToggleBtn.querySelector(".toggle-icon");
-        const toggleText = panelToggleBtn.querySelector(".toggle-text");
-        if (isPanelExpanded) {
-          toggleIcon.textContent = "▼";
-          toggleText.textContent = "Collapse";
-        } else {
-          toggleIcon.textContent = "▲";
-          toggleText.textContent = "View Buses";
-        }
-      }
-
-      busPanelHeader.addEventListener("click", () => togglePanel());
-      busPanelHandle.addEventListener("click", () => togglePanel());
-
-      // Stop Autocomplete
-      setupAutocomplete(originInput, () => {
-        if (destInput.value.trim()) triggerRouteFlow();
-      });
-      setupAutocomplete(destInput, () => {
-        triggerRouteFlow();
-      });
-
-      destInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && destInput.value.trim()) {
-          e.preventDefault();
-          triggerRouteFlow();
-        }
-      });
-
-      originInput.addEventListener("keydown", (e) => {
-        if (e.key === "Enter" && destInput.value.trim()) {
-          e.preventDefault();
-          triggerRouteFlow();
-        }
-      });
-
-      searchBtn.addEventListener("click", () => {
-        const from = originInput.value.trim();
-        const to = destInput.value.trim();
-        if (!to && !from) {
-          alert("Please enter a destination to find buses.");
-          destInput.focus();
-          return;
-        }
-        if (to) {
-          triggerRouteFlow();
-        } else {
-          window.location.href = `/search?from=${encodeURIComponent(from)}`;
-        }
-      });
-
-      // Main Orchestration Flow
-      async function triggerRouteFlow() {
-        const from = originInput.value.trim() || "Your location";
-        const to = destInput.value.trim();
-        if (!to) return;
-
-        // Persist route
-        sessionStorage.setItem("tn_one_from", from);
-        sessionStorage.setItem("tn_one_to", to);
-
-        // Update Panel Header
-        panelRouteTitle.textContent = `${from} → ${to}`;
-        panelDistanceBadge.textContent = "Calculating...";
-        panelAddBusBtn.href = `/report?from=${encodeURIComponent(from !== "Your location" ? from : "")}&to=${encodeURIComponent(to)}`;
-
-        // Open Bottom Bus Panel (visible)
-        busPanel.classList.add("visible");
-        togglePanel(true); // Open expanded to show buses immediately
-
-        // 1. Fetch Buses
-        loadBusesForRoute(from, to);
-
-        // 2. Geocode & Draw Route with distance
-        calculateAndDrawRoute(from, to);
-      }
-
-      // API: Load Buses & Sort Timings
-      async function loadBusesForRoute(from, to) {
-        panelBusList.innerHTML = `
-          <div class="panel-loading">
-            <div class="loading-spinner"></div>
-            <p style="font-size:13px; color:var(--color-text-secondary); margin-top:6px;">Finding buses for this route...</p>
-          </div>`;
-        panelBusCount.textContent = "Searching...";
-
-        try {
-          const res = await TNOne.get("/api/search", {
-            from: from !== "Your location" ? from : "",
-            to: to
-          });
-          const results = res.data && res.data.results ? res.data.results : [];
-          renderPanelBuses(results, from, to);
-        } catch (err) {
-          panelBusList.innerHTML = `
-            <div class="panel-empty-state">
-              <div style="font-size:24px; margin-bottom:4px;">⚠️</div>
-              <p style="color:var(--color-error);">Could not load buses. Please try again.</p>
-            </div>`;
-          panelBusCount.textContent = "0 found";
-        }
-      }
-
-      function renderPanelBuses(results, from, to) {
-        if (!results || results.length === 0) {
-          panelBusCount.textContent = "0 found";
-          panelBusList.innerHTML = `
-            <div class="panel-empty-state">
-              <div style="font-size:28px; margin-bottom:4px;">🚌</div>
-              <p style="font-weight:700; color:var(--color-text);">No buses found for this route</p>
-              <p style="font-size:12px; color:var(--color-text-secondary);">Be the first to add community timings!</p>
-            </div>`;
-          return;
-        }
-
-        panelBusCount.textContent = `${results.length} found`;
-
-        // Parse time string to minutes from midnight (handles AM/PM and 24h)
-        function parseTimeToMinutes(str) {
-          if (!str) return null;
-          const s = String(str).toLowerCase().trim();
-          const m = s.match(/(\d{1,2}):(\d{2})/);
-          if (!m) return null;
-          let h = parseInt(m[1], 10);
-          const min = parseInt(m[2], 10);
-          if (s.includes("pm") && h < 12) h += 12;
-          if (s.includes("am") && h === 12) h = 0;
-          return h * 60 + min;
-        }
-
-        // Current user time
-        const now = new Date();
-        const nowMins = now.getHours() * 60 + now.getMinutes();
-
-        // Calculate next immediate departure for each bus
-        const sortedResults = results.map((entry) => {
-          const bus = entry.bus || {};
-          let timings = (bus.timings && bus.timings.length > 0) ? bus.timings : [];
-          if (entry.timing_display && !timings.includes(entry.timing_display)) {
-            timings = [entry.timing_display, ...timings];
-          }
-
-          let bestTiming = null;
-          let minDiff = Infinity;
-          let isUpcomingToday = false;
-
-          for (const t of timings) {
-            const tm = parseTimeToMinutes(t);
-            if (tm === null) continue;
-            const diff = tm - nowMins;
-            if (diff >= 0 && diff < minDiff) {
-              minDiff = diff;
-              bestTiming = t;
-              isUpcomingToday = true;
-            }
-          }
-
-          // If no remaining departures today, find the earliest tomorrow morning
-          if (!bestTiming && timings.length > 0) {
-            let earliest = Infinity;
-            for (const t of timings) {
-              const tm = parseTimeToMinutes(t);
-              if (tm !== null && tm < earliest) {
-                earliest = tm;
-                bestTiming = t;
-              }
-            }
-            if (bestTiming) {
-              minDiff = (1440 - nowMins) + earliest;
-              isUpcomingToday = false;
-            }
-          }
-
-          const rawTime = bestTiming || entry.boarding_time || entry.timing_display || (timings[0] || "");
-          const finalMinsUntil = isFinite(minDiff) ? minDiff : (entry.minutes_until_boarding ?? 9999);
-
-          return {
-            ...entry,
-            nextImmediateTime: rawTime,
-            minutesUntil: finalMinsUntil,
-            isUpcomingToday
-          };
-        });
-
-        // Sort buses strictly by immediate departure time (closest first)
-        sortedResults.sort((a, b) => a.minutesUntil - b.minutesUntil);
-
-        panelBusesMap.clear();
-        sortedResults.forEach(entry => {
-          if (entry && entry.bus && entry.bus.id) {
-            panelBusesMap.set(Number(entry.bus.id), entry.bus);
-          }
-        });
-
-        const cardsHtml = sortedResults.map((entry, idx) => {
-          const bus = entry.bus || {};
-          const busName = escapeHtml(bus.bus_name || "Bus");
-          const busNum = bus.bus_number ? `<span class="panel-bus-num">${escapeHtml(bus.bus_number)}</span>` : "";
-          const operator = escapeHtml(bus.operator || bus.bus_type || "");
-
-          // Format next bus timing strictly in AM/PM
-          const timeDisplay = formatTimeAmPm(entry.nextImmediateTime);
-
-          // Expected arrival time in AM/PM
-          const reachingTimeStr = formatTimeAmPm(entry.reaching_time || bus.reaching_time);
-          const arrivalHtml = reachingTimeStr ? `<span style="font-size:11px; color:var(--color-text-secondary); font-weight:600;">Arr: ${escapeHtml(reachingTimeStr)}</span>` : "";
-
-          let countdownText = "";
-          const mins = Math.round(entry.minutesUntil);
-          if (mins <= 2) {
-            countdownText = "Departing now";
-          } else if (mins < 60) {
-            countdownText = `in ${mins} min`;
-          } else if (mins < 1440) {
-            const hrs = Math.floor(mins / 60);
-            const remMins = mins % 60;
-            countdownText = `in ${hrs}h ${remMins > 0 ? remMins + 'm' : ''}`;
-          } else {
-            countdownText = "Tomorrow";
-          }
-
-          // Other upcoming timings for this bus in AM/PM
-          let subTimingsHtml = "";
-          if (bus.timings && bus.timings.length > 1) {
-            const ampmList = Array.from(new Set(bus.timings.map(t => formatTimeAmPm(t)))).filter(t => t !== timeDisplay);
-            if (ampmList.length > 0) {
-              subTimingsHtml = `<div style="font-size:11px; color:var(--color-text-secondary); margin-top:3px;">Later: ${escapeHtml(ampmList.slice(0, 4).join(", "))}</div>`;
-            }
-          }
-
-          // Spots with Timing Timeline
-          let spotsTimelineHtml = "";
-          const spotsList = entry.spots || entry.stop_timings || (bus.spots || bus.stop_timings);
-          if (spotsList && Array.isArray(spotsList) && spotsList.length > 0) {
-            const items = spotsList.map((sp, sIdx) => {
-              const isStart = sIdx === 0;
-              const isDest = sIdx === spotsList.length - 1;
-              const typeClass = isStart ? "start" : (isDest ? "dest" : "intermediate");
-              const spotName = escapeHtml(sp.stop || "");
-              const spotTime = sp.time ? escapeHtml(formatTimeAmPm(sp.time)) : "";
-              const arrow = !isDest ? `<span class="spot-arrow-sep">→</span>` : "";
-              return `
-                <span class="spot-item-badge ${typeClass}">
-                  <span class="spot-dot-indicator"></span>
-                  <span class="spot-badge-name">${spotName}</span>
-                  ${spotTime ? `<span class="spot-badge-time">${spotTime}</span>` : ""}
-                </span>
-                ${arrow}
-              `;
-            }).join("");
-
-            spotsTimelineHtml = `
-              <div class="spots-route-timeline" style="margin: 6px 0 2px;">
-                <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
-                  <span>📍 Spots &amp; Passing Timings</span>
-                  <div style="display:flex; gap:6px;">
-                    <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
-                      ➕ Add Stop
-                    </button>
-                    <a href="/edit?id=${bus.id}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
-                      ✏️ Edit
-                    </a>
-                  </div>
-                </div>
-                <div class="spots-scroll-wrap">${items}</div>
-              </div>`;
-          } else {
-            spotsTimelineHtml = `
-              <div class="spots-route-timeline" style="margin: 6px 0 2px;">
-                <div class="timeline-header" style="display:flex; align-items:center; justify-content:space-between;">
-                  <span>📍 Route Stops</span>
-                  <div style="display:flex; gap:6px;">
-                    <button type="button" class="btn-add-stop-pill btn-open-add-stop" data-bus-id="${bus.id}">
-                      ➕ Add Stop
-                    </button>
-                    <a href="/edit?id=${bus.id}" class="btn-add-stop-pill" style="text-decoration:none; color:inherit;">
-                      ✏️ Edit
-                    </a>
-                  </div>
-                </div>
-              </div>`;
-          }
-
-          const isNearestUpcoming = idx === 0;
-
-          // Next immediate bus highlight card
-          if (isNearestUpcoming) {
-            return `
-              <div class="panel-bus-item nearest-bus">
-                <div class="nearest-bus-badge">🟢 NEXT IMMEDIATE BUS</div>
-                <div class="panel-bus-row">
-                  <div class="panel-bus-left">
-                    <span class="panel-bus-title">🚌 ${busName}</span>
-                    ${busNum}
-                    ${operator ? `<div class="panel-bus-sub">${operator}</div>` : ""}
-                    ${subTimingsHtml}
-                  </div>
-                  <div class="panel-bus-right">
-                    <span class="panel-bus-time">${timeDisplay}</span>
-                    <span class="panel-bus-countdown" style="font-weight:800; color:var(--color-primary);">${countdownText}</span>
-                    ${arrivalHtml}
-                  </div>
-                </div>
-                ${spotsTimelineHtml}
-              </div>`;
-          }
-
-          // Subsequent immediate buses in chronological sequence
-          return `
-            <div class="panel-bus-item">
-              <div class="panel-bus-row">
-                <div class="panel-bus-left">
-                  <span class="panel-bus-title">🚌 ${busName}</span>
-                  ${busNum}
-                  ${operator ? `<div class="panel-bus-sub">${operator}</div>` : ""}
-                  ${subTimingsHtml}
-                </div>
-                <div class="panel-bus-right">
-                  <span class="panel-bus-time">${timeDisplay}</span>
-                  <span class="panel-bus-countdown">${countdownText}</span>
-                  ${arrivalHtml}
-                </div>
-              </div>
-              ${spotsTimelineHtml}
-            </div>`;
-        }).join("");
-
-
-        panelBusList.innerHTML = cardsHtml;
-      }
-
-      // Geocoding & Route Calculation
-      async function calculateAndDrawRoute(from, to) {
-        if (routingControl) {
-          try { map.removeControl(routingControl); } catch(_) {}
-          try { map.removeLayer(routingControl); } catch(_) {}
-          routingControl = null;
-        }
-        if (fallbackRoute) {
-          try { map.removeLayer(fallbackRoute); } catch(_) {}
-          fallbackRoute = null;
-        }
-        if (originMarker) {
-          try { map.removeLayer(originMarker); } catch(_) {}
-          originMarker = null;
-        }
-        if (destMarker) {
-          try { map.removeLayer(destMarker); } catch(_) {}
-          destMarker = null;
-        }
-
-        const [p1, p2] = await Promise.all([
-          geocodeLocation(from),
-          geocodeLocation(to)
-        ]);
-
-        if (!p1 && !p2) {
-          panelDistanceBadge.textContent = "Location not found";
-          return;
-        }
-
-        // If only one coordinate was found, still pin that location on the map
-        if (!p1 || !p2) {
-          const known = p1 || p2;
-          const knownName = p1 ? from : to;
-          const missingName = p1 ? to : from;
-          const knownLatLng = L.latLng(known[0], known[1]);
-
-          L.circleMarker(knownLatLng, {
-            radius: 8,
-            fillColor: p1 ? "#1a73e8" : "#ea4335",
-            color: "#ffffff", weight: 3, fillOpacity: 1
-          }).addTo(map).bindPopup(`<b>${escapeHtml(knownName)}</b>`);
-          map.setView(knownLatLng, 13);
-
-          panelDistanceBadge.textContent = `"${missingName}" not on map`;
-          return;
-        }
-
-        const latLng1 = L.latLng(p1[0], p1[1]);
-        const latLng2 = L.latLng(p2[0], p2[1]);
-
-        // Start & Destination Markers (Google Maps inspired)
-        originMarker = L.circleMarker(latLng1, {
-          radius: 8,
-          fillColor: "#1a73e8",
-          color: "#ffffff",
-          weight: 3,
-          fillOpacity: 1
-        }).addTo(map).bindPopup(`<b>Start:</b> ${from}`);
-
-        destMarker = L.circleMarker(latLng2, {
-          radius: 8,
-          fillColor: "#ea4335",
-          color: "#ffffff",
-          weight: 3,
-          fillOpacity: 1
-        }).addTo(map).bindPopup(`<b>Destination:</b> ${to}`);
-
-        try {
-          const osrmUrl = `https://routing.openstreetmap.de/routed-car/route/v1/driving/${p1[1]},${p1[0]};${p2[1]},${p2[0]}?overview=full&geometries=geojson`;
-          const res = await fetch(osrmUrl);
-          const data = await res.json();
-
-          if (data.code === "Ok" && data.routes && data.routes.length > 0) {
-            const route = data.routes[0];
-            const distKm = (route.distance / 1000).toFixed(1);
-            panelDistanceBadge.textContent = `${distKm} km`;
-            
-            const coordinates = route.geometry.coordinates.map(c => [c[1], c[0]]);
-            routingControl = L.polyline(coordinates, {
-              color: '#1a73e8',
-              weight: 6,
-              opacity: 0.9
-            }).addTo(map);
-
-            map.fitBounds(routingControl.getBounds(), { padding: [80, 80] });
-          } else {
-            drawFallbackPolyline(latLng1, latLng2, from, to);
-          }
-        } catch (_) {
-          drawFallbackPolyline(latLng1, latLng2, from, to);
-        }
-      }
-
-      function drawFallbackPolyline(latLng1, latLng2, from, to) {
-        if (routingControl) {
-          try { map.removeControl(routingControl); } catch(_) {}
-          try { map.removeLayer(routingControl); } catch(_) {}
-          routingControl = null;
-        }
-        fallbackRoute = L.polyline([latLng1, latLng2], {
-          color: '#1a73e8',
-          weight: 6,
-          opacity: 0.85,
-          dashArray: '8, 6'
-        }).addTo(map);
-
-        // Calculate direct distance in KM using Haversine formula
-        const distM = map.distance(latLng1, latLng2);
-        const distKm = (distM / 1000).toFixed(1);
-        panelDistanceBadge.textContent = `${distKm} km`;
-
-        map.fitBounds(fallbackRoute.getBounds(), { padding: [80, 80] });
-      }
-
-      // Suffixes common in Tamil Nadu place names that Nominatim often can't resolve
-      const _TN_STRIP_SUFFIXES = [
-        "bus stand", "bus stop", "bus terminus", "bus depot",
-        "pirivu", "junction", "jn", "signal", "nagar", "colony",
-        "cross", "circle", "stand", "stop", "terminus", "depot",
-        "town", "bypass"
-      ];
-
-      function _simplifyPlaceName(name) {
-        // Progressively simplify by removing trailing known suffixes
-        const variants = [name];
-        let simplified = name.toLowerCase().trim();
-        for (const suffix of _TN_STRIP_SUFFIXES) {
-          if (simplified.endsWith(suffix)) {
-            simplified = simplified.slice(0, -suffix.length).trim().replace(/[\s,]+$/, '');
-            if (simplified.length >= 3) {
-              // Title-case it
-              variants.push(simplified.split(' ').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' '));
-            }
-            break;
-          }
-        }
-        // Also try just the first meaningful word (≥4 chars)
-        const firstWord = name.trim().split(/\s+/)[0];
-        if (firstWord.length >= 4 && firstWord.toLowerCase() !== simplified) {
-          variants.push(firstWord);
-        }
-        return variants;
-      }
-
-      async function _nominatimSearch(query) {
-        try {
-          const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(query + ", Tamil Nadu, India")}&limit=1`;
-          const res = await fetch(url, { headers: { "Accept-Language": "en" } });
-          const data = await res.json();
-          if (data && data.length) {
-            return [parseFloat(data[0].lat), parseFloat(data[0].lon)];
-          }
-        } catch (_) {}
-        return null;
-      }
-
-      async function geocodeLocation(name) {
-        if (!name || !name.trim()) return null;
-
-        // Shortcut: user's own live location
-        if (name === "Your location" && userMarker) {
-          const ll = userMarker.getLatLng();
-          return [ll.lat, ll.lng];
-        }
-
-        // Strategy 1: exact name
-        let result = await _nominatimSearch(name);
-        if (result) return result;
-
-        // Strategy 2: simplified / suffix-stripped variants
-        const variants = _simplifyPlaceName(name);
-        for (const variant of variants.slice(1)) {  // skip index 0 (same as original)
-          result = await _nominatimSearch(variant);
-          if (result) return result;
-        }
-
-        // Strategy 3: ask the backend for a known canonical stop name, then re-geocode
-        try {
-          const dbRes = await TNOne.get("/api/stops/search", { q: name });
-          const stops = dbRes && dbRes.data ? dbRes.data : [];
-          if (stops.length > 0) {
-            const canonical = stops[0].stop_name;
-            if (canonical && canonical.toLowerCase() !== name.toLowerCase()) {
-              // Try canonical name and its simplified form
-              result = await _nominatimSearch(canonical);
-              if (result) return result;
-              for (const variant of _simplifyPlaceName(canonical).slice(1)) {
-                result = await _nominatimSearch(variant);
-                if (result) return result;
-              }
-            }
-          }
-        } catch (_) {}
-
-        return null;
-      }
-
-      // Geolocation Locate Button
-      locateBtn.addEventListener("click", () => {
-        if (!navigator.geolocation) {
-          alert("Geolocation is not supported by your browser.");
-          return;
-        }
-        locateBtn.style.opacity = "0.7";
-        navigator.geolocation.getCurrentPosition(
-          (pos) => {
-            locateBtn.style.opacity = "1";
-            const lat = pos.coords.latitude;
-            const lng = pos.coords.longitude;
-            map.setView([lat, lng], 14);
-
-            const customIcon = L.divIcon({
-              className: 'user-location-marker-pin',
-              html: `<div style="width:34px; height:34px; background:#0B6E4F; border:3px solid #ffffff; border-radius:50%; box-shadow:0 3px 8px rgba(0,0,0,0.35); display:flex; align-items:center; justify-content:center; font-size:16px;">📍</div>`,
-              iconSize: [34, 34],
-              iconAnchor: [17, 34],
-              popupAnchor: [0, -34]
-            });
-
-            if (userMarker) map.removeLayer(userMarker);
-            userMarker = L.marker([lat, lng], {
-              icon: customIcon
-            }).addTo(map).bindPopup("Your current location").openPopup();
-
-            originInput.value = "Your location";
-            if (destInput.value.trim()) triggerRouteFlow();
-          },
-          () => {
-            locateBtn.style.opacity = "1";
-            alert("Could not retrieve your location. Please check location permissions.");
-          },
-          { enableHighAccuracy: true, timeout: 8000 }
-        );
-      });
-
-      // Stop Autocomplete
-      function setupAutocomplete(inputEl, onSelect) {
-        if (!inputEl) return;
-        const wrap = document.createElement("div");
-        wrap.className = "autocomplete-wrap";
-        inputEl.parentNode.insertBefore(wrap, inputEl);
-        wrap.appendChild(inputEl);
-
-        const list = document.createElement("div");
-        list.className = "autocomplete-list";
-        wrap.appendChild(list);
-
-        let debounceTimer = null;
-        inputEl.addEventListener("input", () => {
-          clearTimeout(debounceTimer);
-          const q = inputEl.value.trim();
-          if (q.length < 2) {
-            list.classList.remove("active");
-            list.innerHTML = "";
-            return;
-          }
-          debounceTimer = setTimeout(async () => {
-            try {
-              // Fetch Nominatim and DB simultaneously
-              const nomUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ", Tamil Nadu, India")}&limit=4`;
-              const [nomRes, dbRes] = await Promise.all([
-                fetch(nomUrl, { headers: { "Accept-Language": "en" } }).catch(() => null),
-                TNOne.get("/api/stops/search", { q }).catch(() => null)
-              ]);
-              
-              const nomData = nomRes && nomRes.ok ? await nomRes.json() : [];
-              const dbData = dbRes && dbRes.data ? dbRes.data : [];
-              
-              if (!nomData.length && !dbData.length) {
-                list.classList.remove("active");
-                return;
-              }
-              
-              let html = "";
-              
-              if (dbData.length > 0) {
-                html += `<div style="font-size:10px; font-weight:800; text-transform:uppercase; color:var(--color-text-secondary); padding: 6px 12px 2px; background:var(--color-background);">Known Bus Stops</div>`;
-                html += dbData.slice(0, 5).map(s => `
-                  <div class="autocomplete-item" data-name="${escapeHtml(s.stop_name)}">
-                    <div style="font-weight: 600;">🚌 ${escapeHtml(s.stop_name)}</div>
-                  </div>`).join("");
-              }
-              
-              if (nomData.length > 0) {
-                html += `<div style="font-size:10px; font-weight:800; text-transform:uppercase; color:var(--color-text-secondary); padding: 6px 12px 2px; background:var(--color-background);">Map Places</div>`;
-                html += nomData.map((s) => {
-                  const nameParts = s.display_name.split(", ");
-                  const shortName = nameParts[0];
-                  const subText = nameParts.slice(1, 3).join(", ");
-                  return `<div class="autocomplete-item" data-name="${escapeHtml(shortName)}">
-                    <div style="font-weight: 600;">📍 ${escapeHtml(shortName)}</div>
-                    <div style="font-size: 11px; color: var(--color-text-secondary); margin-top: 2px;">${escapeHtml(subText)}</div>
-                  </div>`;
-                }).join("");
-              }
-              
-              list.innerHTML = html;
-              list.classList.add("active");
-            } catch (_) {
-              list.classList.remove("active");
-            }
-          }, 300);
-        });
-
-        list.addEventListener("click", (e) => {
-          const item = e.target.closest(".autocomplete-item");
-          if (!item) return;
-          inputEl.value = item.dataset.name;
-          list.classList.remove("active");
-          if (onSelect) onSelect(item.dataset.name);
-        });
-
-        document.addEventListener("click", (e) => {
-          if (!wrap.contains(e.target)) list.classList.remove("active");
-        });
-      }
-
-      // Add Stop Modal wiring
-      const addStopModal = document.getElementById("add-stop-modal");
-      const modalBusTitle = document.getElementById("modal-bus-title");
-      const modalBusSubtitle = document.getElementById("modal-bus-subtitle");
-      const closeAddStopModalBtn = document.getElementById("close-add-stop-modal");
-      const cancelAddStopBtn = document.getElementById("cancel-add-stop-btn");
-      const addStopForm = document.getElementById("add-stop-form");
-      const addStopBusId = document.getElementById("add-stop-bus-id");
-      const addStopAfterSelect = document.getElementById("add-stop-after-select");
-      const addStopNameInput = document.getElementById("add-stop-name-input");
-      const addStopTimeInput = document.getElementById("add-stop-time-input");
-      const addStopTimeAmpm = document.getElementById("add-stop-time-ampm");
-      const addStopAlert = document.getElementById("add-stop-alert");
-      const submitAddStopBtn = document.getElementById("submit-add-stop-btn");
-
-      if (addStopNameInput) {
-        setupAutocomplete(addStopNameInput);
-      }
-
-      if (addStopTimeInput && addStopTimeAmpm) {
-        const syncTimeAmpm = () => {
-          addStopTimeAmpm.textContent = addStopTimeInput.value ? formatTimeAmPm(addStopTimeInput.value) : "--:-- --";
-        };
-        addStopTimeInput.addEventListener("input", syncTimeAmpm);
-        addStopTimeInput.addEventListener("change", syncTimeAmpm);
-      }
-
-      function openAddStopModal(bus) {
-        if (!bus) return;
-        addStopBusId.value = bus.id;
-        modalBusTitle.textContent = `Add Stop to ${bus.bus_name || "Bus"}`;
-        modalBusSubtitle.textContent = `Route: ${bus.start_stop || "Start"} → ${bus.destination_stop || bus.destination || "Destination"}`;
-
-        let stops = [];
-        if (bus.spots && Array.isArray(bus.spots) && bus.spots.length > 0) {
-          stops = bus.spots.map(s => s.stop || s.stop_name || "");
-        } else if (bus.stop_timings && Array.isArray(bus.stop_timings) && bus.stop_timings.length > 0) {
-          stops = bus.stop_timings.map(s => s.stop || s.stop_name || "");
-        } else {
-          const intermediate = bus.boarded_stops ? bus.boarded_stops.split(",").map(s => s.trim()).filter(Boolean) : [];
-          stops = [bus.start_stop, ...intermediate, bus.destination].filter(Boolean);
-        }
-
-        const uniqueStops = [];
-        stops.forEach(s => {
-          if (s && !uniqueStops.includes(s)) uniqueStops.push(s);
-        });
-
-        addStopAfterSelect.innerHTML = "";
-        uniqueStops.forEach((stopName, idx) => {
-          const opt = document.createElement("option");
-          opt.value = stopName;
-          if (idx === 0) {
-            opt.textContent = `After ${stopName} (Start)`;
-          } else if (idx === uniqueStops.length - 1) {
-            opt.textContent = `After ${stopName} (Near Destination)`;
-          } else {
-            opt.textContent = `After ${stopName}`;
-          }
-          addStopAfterSelect.appendChild(opt);
-        });
-
-        addStopNameInput.value = "";
-        addStopTimeInput.value = "";
-        addStopTimeAmpm.textContent = "--:-- --";
-        addStopAlert.style.display = "none";
-        addStopAlert.textContent = "";
-        submitAddStopBtn.disabled = false;
-        submitAddStopBtn.textContent = "Save Stop to Route";
-
-        addStopModal.style.display = "flex";
-        setTimeout(() => addStopNameInput.focus(), 50);
-      }
-
-      function closeAddStopModal() {
-        if (addStopModal) addStopModal.style.display = "none";
-      }
-
-      if (closeAddStopModalBtn) closeAddStopModalBtn.addEventListener("click", closeAddStopModal);
-      if (cancelAddStopBtn) cancelAddStopBtn.addEventListener("click", closeAddStopModal);
-      if (addStopModal) {
-        addStopModal.addEventListener("click", (e) => {
-          if (e.target === addStopModal) closeAddStopModal();
-        });
-      }
-
-      // Delegate click on panel bus items for ➕ Add Stop button
-      panelBusList.addEventListener("click", async (e) => {
-        const btn = e.target.closest(".btn-open-add-stop");
-        if (!btn) return;
-        e.preventDefault();
-
-        const auth = await TNAuth.getStatus();
-        if (!auth.authenticated) {
-          alert("Please log in to add a stop to this bus route.");
-          window.location.href = "/login?redirect=" + encodeURIComponent(window.location.href);
-          return;
-        }
-
-        const busId = Number(btn.dataset.busId);
-        const bus = panelBusesMap.get(busId);
-        if (!bus) {
-          alert("Bus details not found. Please refresh the page.");
-          return;
-        }
-        openAddStopModal(bus);
-      });
-
-      if (addStopForm) {
-        addStopForm.addEventListener("submit", async (e) => {
-          e.preventDefault();
-          const busId = addStopBusId.value;
-          const afterStop = addStopAfterSelect.value;
-          const stopName = addStopNameInput.value.trim();
-          const timeVal = addStopTimeInput.value.trim();
-
-          if (!stopName) {
-            addStopAlert.className = "alert alert-error";
-            addStopAlert.textContent = "Please enter a stop name.";
-            addStopAlert.style.display = "block";
-            return;
-          }
-
-          const formattedTime = timeVal ? formatTimeAmPm(timeVal) : null;
-
-          submitAddStopBtn.disabled = true;
-          submitAddStopBtn.textContent = "Saving Stop...";
-          addStopAlert.style.display = "none";
-
-          try {
-            const payload = {
-              stop_name: stopName,
-              after_stop: afterStop,
-            };
-            if (formattedTime) {
-              payload.time = formattedTime;
-            }
-
-            await TNOne.post(`/api/buses/${busId}/stops`, payload);
-
-            closeAddStopModal();
-            showToast(`Stop "${stopName}" added successfully to the route!`);
-
-            // Re-trigger route flow to refresh the bottom sheet buses immediately
-            triggerRouteFlow();
-          } catch (err) {
-            addStopAlert.className = "alert alert-error";
-            addStopAlert.textContent = err.message || "Failed to add stop. Please try again.";
-            addStopAlert.style.display = "block";
-            submitAddStopBtn.disabled = false;
-            submitAddStopBtn.textContent = "Save Stop to Route";
-          }
-        });
-      }
-
-      function showToast(message) {
-        const existing = document.querySelector(".toast-notification");
-        if (existing) existing.remove();
-
-        const toast = document.createElement("div");
-        toast.className = "toast-notification";
-        toast.innerHTML = `<span>✅</span> <span>${escapeHtml(message)}</span>`;
-        document.body.appendChild(toast);
-
-        setTimeout(() => {
-          toast.style.transition = "opacity 0.3s, transform 0.3s";
-          toast.style.opacity = "0";
-          toast.style.transform = "translate(-50%, 20px)";
-          setTimeout(() => toast.remove(), 300);
-        }, 3500);
-      }
-
-      function escapeHtml(str) {
-        if (!str) return "";
-        return String(str)
-          .replace(/&/g, "&amp;")
-          .replace(/</g, "&lt;")
-          .replace(/>/g, "&gt;")
-          .replace(/"/g, "&quot;")
-          .replace(/'/g, "&#39;");
-      }
-    });
-  </script>
+  <script src="js/home.js"></script>
 </body>
 </html>

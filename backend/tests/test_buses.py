@@ -81,8 +81,8 @@ def test_user_can_edit_own_bus(client, make_user, login_as, db):
     assert "01:15 PM" in updated["bus_timings"]
 
 
-def test_any_logged_in_user_can_edit_bus(client, make_user, login_as, db):
-    """Community model: any authenticated user can edit any bus route."""
+def test_non_owner_must_use_change_request(client, make_user, login_as, db):
+    """Direct edits are owner-only; non-owners go through change requests."""
     user1 = make_user(google_id="creator", email="creator@example.com")
     user2 = make_user(google_id="other", email="other@example.com")
 
@@ -91,11 +91,16 @@ def test_any_logged_in_user_can_edit_bus(client, make_user, login_as, db):
     create_resp = client.post("/api/buses", json={"bus_name": "User 1 Bus", "start_stop": "A", "destination_stop": "B"})
     bus_id = create_resp.get_json()["data"]["id"]
 
-    # User 2 logs in and edits — should succeed (collaborative editing feature)
+    # User 2 cannot overwrite the route directly
     login_as(user2)
     tamper_resp = client.put(f"/api/buses/{bus_id}", json={"bus_name": "Community Updated Bus", "bus_timings": "06:00 AM"})
-    assert tamper_resp.status_code == 200
-    assert tamper_resp.get_json()["data"]["bus_name"] == "Community Updated Bus"
+    assert tamper_resp.status_code == 403
+
+    # The owner can still edit directly
+    login_as(user1)
+    owner_resp = client.put(f"/api/buses/{bus_id}", json={"bus_name": "Owner Updated Bus"})
+    assert owner_resp.status_code == 200
+    assert owner_resp.get_json()["data"]["bus_name"] == "Owner Updated Bus"
 
 
 def test_unauthenticated_cannot_edit_bus(client, make_user, db):

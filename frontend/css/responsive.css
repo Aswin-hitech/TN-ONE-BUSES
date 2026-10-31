@@ -1,94 +1,147 @@
-/* ====================================================
-   TN FOR BUS – Responsive Design
-   Breakpoints: Mobile (<768px), Tablet (768px - 1024px), Desktop (>1024px)
-   ==================================================== */
+/* ============================================================================
+   TN FOR BUS — Responsive refinements
+   Loaded after style.css. Base layout lives in style.css; this file only
+   smooths the Google-Maps-style shell across phone / tablet / desktop.
+   ========================================================================== */
 
-/* Tablet & Up (768px+) */
-@media (min-width: 768px) {
-  .app-shell {
-    max-width: 720px;
-    padding: 24px 24px calc(var(--bottom-nav-height) + 40px);
-  }
+[hidden] { display: none !important; }
 
-  .map-floating-top {
-    top: 20px;
-    left: 20px;
-    right: auto;
-    width: 420px;
-  }
-
-  .map-floating-actions {
-    right: 24px;
-    bottom: 24px;
-  }
-
-  .bottom-bus-panel {
-    max-width: 440px;
-    left: 20px;
-    right: auto;
-    bottom: 24px;
-    border-radius: var(--radius-xl);
-    border: 1px solid var(--color-border);
-    box-shadow: var(--shadow-lg);
-    padding-bottom: 0;
-  }
-
-  .bottom-nav {
-    bottom: 20px;
-    max-width: 520px;
-  }
+/* ---------------------------------------------------------------- map shell */
+.mobile-search {
+  position: absolute;
+  top: 72px;
+  left: 10px;
+  right: 10px;
+  z-index: 1150;
+  animation: fade-down 0.45s var(--ease-out) 0.05s both;
 }
 
-/* Desktop & Wide Screens (1024px+) */
-@media (min-width: 1024px) {
-  .app-shell {
-    max-width: 800px;
-  }
+.map-panel {
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding-right: 2px;
+  scrollbar-width: none;
+}
+.map-panel::-webkit-scrollbar { display: none; }
 
-  .map-floating-top {
-    width: 440px;
-    top: 24px;
-    left: 24px;
-  }
-
-  .bottom-sheet {
-    left: 24px;
-    bottom: 24px;
-    width: 440px;
-  }
-
-  .bottom-nav {
-    bottom: 24px;
-  }
+.map-panel .results-body {
+  max-height: min(46vh, 520px);
 }
 
-/* Small phones (<380px) */
-@media (max-width: 380px) {
-  .brand-title {
-    font-size: 16px;
-  }
+.nearby-wrap { display: flex; flex-direction: column; gap: 8px; }
 
-  .brand-tagline {
-    font-size: 10px;
-  }
-
-  .location-line input {
-    font-size: 14px;
-  }
-
-  .nav-item {
-    font-size: 10px;
-  }
-
-  .nav-icon {
-    font-size: 16px;
-  }
-
-  .stats-grid {
-    gap: 6px;
-  }
-
-  .stat-number {
-    font-size: 18px;
-  }
+.explore-card {
+  padding: 18px;
+  border-radius: var(--r-xl);
+  background:
+    radial-gradient(420px 180px at 0% 0%, var(--primary-soft), transparent 70%),
+    var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-md);
+  animation: fade-up 0.5s var(--ease-out) 0.16s both;
 }
+.explore-card__eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 8px;
+}
+.explore-card h2 {
+  font-size: 19px;
+  letter-spacing: -0.035em;
+  margin-bottom: 6px;
+}
+.explore-card p {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin-bottom: 12px;
+}
+.explore-card__actions { display: flex; flex-wrap: wrap; gap: 8px; }
+
+/* Results inside the mobile sheet are seamless (no nested card chrome) */
+.sheet .results-panel {
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+  background: transparent;
+  overflow: visible;
+  animation: none;
+}
+.sheet .results-head {
+  padding: 2px 2px 10px;
+  background: transparent;
+  border-bottom: 0;
+}
+.sheet .results-body { padding: 0 0 4px; overflow: visible; }
+.sheet .results-foot {
+  border-top: 1px solid var(--line);
+  background: transparent;
+  border-radius: var(--r-lg);
+  margin-top: 8px;
+  padding-left: 0;
+  padding-right: 0;
+}
+.sheet .results-foot__note { padding-left: 4px; padding-right: 4px; }
+
+body.sheet-expanded .map-fabs {
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(10px);
+}
+
+/* ----------------------------------------------------------------- tablet */
+@media (min-width: 768px) and (max-width: 899px) {
+  .mobile-search { top: 76px; left: 18px; right: 18px; max-width: 440px; }
+  .sheet.is-half { height: min(58vh, 520px); }
+  .toast-stack { bottom: calc(var(--nav-h) + var(--sheet-peek) + 24px); }
+}
+
+/* ---------------------------------------------------------------- desktop */
+@media (min-width: 900px) {
+  .mobile-search { display: none; }
+  .map-panel {
+    overflow-y: auto;
+    max-height: calc(100vh - 170px);
+  }
+  .explore-card { display: block; }
+  .map-top-actions .theme-toggle { width: 38px; height: 38px; box-shadow: none; border-color: transparent; background: transparent; }
+  .map-top-actions .theme-toggle:hover { background: var(--surface-2); }
+}
+
+@media (min-width: 1400px) {
+  .map-panel { width: 440px; }
+}
+
+/* ------------------------------------------------------------- small phone */
+@media (max-width: 420px) {
+  .mobile-search { top: 68px; left: 8px; right: 8px; }
+  .search-card { border-radius: var(--r-lg); }
+  .loc-input { font-size: 14.5px; }
+  .quick-row { flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; }
+  .quick-row::-webkit-scrollbar { display: none; }
+  .ride-time { padding-left: 0; }
+  .ride-time__value { font-size: 17px; }
+  .map-brand-card .brand-title { max-width: 120px; overflow: hidden; text-overflow: ellipsis; }
+  .toast-stack { width: min(calc(100% - 20px), 440px); }
+}
+
+/* --------------------------------------------------------------- utilities */
+.stack-xs > * + * { margin-top: 6px; }
+.stack-sm > * + * { margin-top: 10px; }
+.stack-md > * + * { margin-top: 16px; }
+.w-full { width: 100%; }
+.nowrap { white-space: nowrap; }
+.text-danger { color: var(--danger); }
+.text-success { color: var(--success); }
+.mt-24 { margin-top: 24px; }
+.mb-8 { margin-bottom: 8px; }
+
+/* Legacy class aliases kept so stale cached markup doesn't collapse */
+.map-floating-top { position: absolute; top: 14px; left: 14px; z-index: 1200; width: min(400px, calc(100vw - 28px)); }
+.map-floating-actions { position: absolute; right: 18px; bottom: 90px; z-index: 1180; display: flex; flex-direction: column; gap: 10px; }

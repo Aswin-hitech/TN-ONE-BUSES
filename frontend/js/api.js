@@ -16,9 +16,47 @@ const TNOne = (() => {
   };
 
   const API_BASE = getApiBase();
+  const UNSAFE_METHODS = ["POST", "PUT", "PATCH", "DELETE"];
 
-  async function request(path, { method = "GET", body, params } = {}) {
-    let url = `${API_BASE}${path}`;
+  let csrfToken = null;
+  let csrfPending = null;
+
+  function resolveUrl(path) {
+    return `${API_BASE}${path}`;
+  }
+
+  async function getCsrfToken(force = false) {
+    if (csrfToken && !force) return csrfToken;
+    if (csrfPending && !force) return csrfPending;
+
+    csrfPending = (async () => {
+      try {
+        const res = await fetch(resolveUrl("/api/auth/csrf"), {
+          method: "GET",
+          credentials: "include",
+          headers: { Accept: "application/json" },
+        });
+        if (!res.ok) return null;
+        const payload = await res.json().catch(() => null);
+        const token = payload && payload.data && payload.data.csrf_token;
+        if (token) csrfToken = token;
+        return csrfToken;
+      } catch (_) {
+        return null;
+      } finally {
+        csrfPending = null;
+      }
+    })();
+
+    return csrfPending;
+  }
+
+  function csrfHeaders(token) {
+    return token ? { "X-CSRF-Token": token } : {};
+  }
+
+  async function request(path, { method = "GET", body, params, signal } = {}) {
+    let url = resolveUrl(path);
     if (params) {
       const qs = new URLSearchParams(
         Object.entries(params).filter(([, v]) => v !== undefined && v !== null && v !== "")
@@ -26,12 +64,38 @@ const TNOne = (() => {
       if (qs) url += `?${qs}`;
     }
 
-    const res = await fetch(url, {
-      method,
-      credentials: "include",
-      headers: body ? { "Content-Type": "application/json" } : {},
-      body: body ? JSON.stringify(body) : undefined,
-    });
+    const unsafe = UNSAFE_METHODS.includes(method);
+    const send = (token) =>
+      fetch(url, {
+        method,
+        credentials: "include",
+        headers: {
+          ...(body ? { "Content-Type": "application/json" } : {}),
+          ...csrfHeaders(token),
+        },
+        body: body ? JSON.stringify(body) : undefined,
+        signal,
+      });
+
+    let res;
+    try {
+      res = await send(unsafe ? await getCsrfToken() : null);
+
+      // If the session rotated (or the page was open across a sign-in), fetch
+      // a fresh token and retry exactly once.
+      if (res.status === 403 && unsafe) {
+        const probe = await res.clone().json().catch(() => null);
+        if (probe && probe.code === "csrf_failed") {
+          const fresh = await getCsrfToken(true);
+          if (fresh) res = await send(fresh);
+        }
+      }
+    } catch (networkError) {
+      const error = new Error("Network problem. Check your connection and try again.");
+      error.status = 0;
+      error.cause = networkError;
+      throw error;
+    }
 
     let payload = null;
     try {
@@ -41,10 +105,15 @@ const TNOne = (() => {
     }
 
     if (!res.ok) {
-      const message = (payload && payload.error) || "Something went wrong. Please try again.";
+      const message =
+        (payload && (payload.error || payload.message)) ||
+        (res.status === 429
+          ? "Too many requests. Please slow down."
+          : "Something went wrong. Please try again.");
       const error = new Error(message);
       error.status = res.status;
       error.code = payload && payload.code;
+      error.data = payload && payload.data;
       throw error;
     }
     return payload;
@@ -102,6 +171,7 @@ const TNOne = (() => {
     put: (path, body) => request(path, { method: "PUT", body }),
     request,
     formatTimeAmPm,
+    getCsrfToken,
     API_BASE,
   };
 })();

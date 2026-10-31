@@ -229,7 +229,7 @@ def _serialize_bus_result(bus: Bus, now_dt: datetime, from_name: str = None, to_
 
 def search_all() -> dict:
     now = _now_ist()
-    all_buses = Bus.query.all()
+    all_buses = Bus.query.order_by(Bus.id).limit(5000).all()
     results = [_serialize_bus_result(b, now) for b in all_buses]
     results.sort(
         key=lambda x: (
@@ -254,7 +254,7 @@ def search_by_origin(origin_query: str) -> dict:
     if not origin_query or not origin_query.strip():
         return search_all()
 
-    all_buses = Bus.query.all()
+    all_buses = Bus.query.order_by(Bus.id).limit(5000).all()
 
     # Resolve the user's (possibly misspelled) query to the canonical stop name in DB
     resolved_origin = resolve_stop_name(origin_query, all_buses)
@@ -306,7 +306,7 @@ def search_by_destination(destination_query: str) -> dict:
     if not destination_query or not destination_query.strip():
         return search_all()
 
-    all_buses = Bus.query.all()
+    all_buses = Bus.query.order_by(Bus.id).limit(5000).all()
     resolved_dest = resolve_stop_name(destination_query, all_buses)
     was_corrected = resolved_dest.lower() != destination_query.strip().lower()
 
@@ -356,7 +356,7 @@ def search_from_to(origin_query: str, destination_query: str) -> dict:
     if not destination_query:
         return search_by_origin(origin_query)
 
-    all_buses = Bus.query.all()
+    all_buses = Bus.query.order_by(Bus.id).limit(5000).all()
 
     # Resolve user's misspellings to canonical DB stop names
     resolved_origin = resolve_stop_name(origin_query, all_buses)

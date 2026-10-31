@@ -1,5 +1,6 @@
 from flask import Blueprint, request
 from pydantic import ValidationError
+from app.extensions import limiter
 from app.schemas.search import SearchQuery
 from app.services import search_service
 from app.utils.responses import ok, fail
@@ -8,6 +9,7 @@ bp = Blueprint("search", __name__, url_prefix="/api/search")
 
 
 @bp.route("", methods=["GET"])
+@limiter.limit("60 per minute")
 def search():
     try:
         query = SearchQuery(

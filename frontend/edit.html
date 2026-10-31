@@ -2,137 +2,236 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Edit Bus Route | TN FOR BUS</title>
-  <meta name="description" content="Suggest updates or edits to bus route details on TN FOR BUS community transit platform." />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <title>Suggest an edit — TN FOR BUS</title>
+  <meta name="description" content="Suggest corrections to a community-reported bus route on TN FOR BUS." />
+  <meta name="theme-color" content="#0b6e4f" />
+  <meta name="color-scheme" content="light dark" />
   <meta name="robots" content="noindex, nofollow" />
   <meta name="referrer" content="strict-origin-when-cross-origin" />
+  <link rel="icon" href="favicon.ico" type="image/x-icon" />
   <link rel="stylesheet" href="css/style.css" />
   <link rel="stylesheet" href="css/responsive.css" />
-  <link rel="icon" href="favicon.ico" type="image/x-icon" />
+  <script src="js/theme-boot.js"></script>
 </head>
+
 <body>
-  <header class="topbar">
-    <div class="topbar-container">
-      <a href="/" class="logo">TN FOR BUS</a>
-      <div id="topbar-auth" class="topbar-auth"></div>
-    </div>
-  </header>
-
-  <main class="page-container">
-    <div id="auth-gate" class="auth-gate" style="display:none; text-align:center; padding: 40px 20px;">
-      <div style="font-size:32px; margin-bottom:12px;">🔒</div>
-      <h2 style="font-size:20px; font-weight:800; color:var(--color-text); margin-bottom:8px;">Sign in to Edit Route</h2>
-      <p style="font-size:14px; color:var(--color-text-secondary); margin-bottom:20px;">
-        To maintain data quality, you need to sign in before you can edit community routes.
-      </p>
-      <a href="/login" id="login-link" class="btn-primary" style="display:inline-flex; width:auto; margin:0 auto;">Sign In</a>
-    </div>
-
-    <div id="edit-form-card" class="card" style="display:none; max-width:600px; margin: 24px auto;">
-      <div class="card-header">
-        <h2 class="card-title">✏️ Edit Bus Route</h2>
-        <p class="card-subtitle">Make your suggested changes below. If you're not the route owner, a request will be sent to them for review.</p>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-area">
+        <a href="/" class="logo-placeholder" title="TN FOR BUS home">TN</a>
+        <div class="brand-text-block">
+          <a href="/" class="brand-title">TN FOR BUS</a>
+          <span class="brand-tagline">Community-Powered Bus Network</span>
+        </div>
       </div>
 
-      <div class="card-body">
-        <!-- Post-submission success panel -->
-        <div id="request-sent-panel" style="display:none; text-align:center; padding:40px 20px;">
-          <div style="font-size:40px; margin-bottom:12px;">📬</div>
-          <h3 style="font-size:18px; font-weight:800; color:var(--color-text); margin-bottom:8px;" id="request-result-title">Request Sent!</h3>
-          <p style="font-size:14px; color:var(--color-text-secondary); margin-bottom:20px;" id="request-result-desc">
-            Your suggested changes have been sent to the route owner for review.
-          </p>
-          <button type="button" onclick="history.back()" class="btn-secondary" style="height:40px; padding:0 20px;">← Back</button>
+      <nav class="nav-links" aria-label="Main navigation">
+        <a class="nav-link" href="/">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 10.5 8.5-7 8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5.5h5V20"/></svg>
+          Map
+        </a>
+        <a class="nav-link" href="/search">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg>
+          Search
+        </a>
+        <a class="nav-link" href="/report">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg>
+          Add bus
+        </a>
+        <a class="nav-link" href="/profile">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg>
+          Profile
+        </a>
+      </nav>
+
+      <div class="topbar-actions">
+        <div class="theme-mount"></div>
+        <div data-auth-slot></div>
+      </div>
+    </header>
+
+    <main>
+      <div class="page-head">
+        <span class="page-head__eyebrow">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px"><path d="M4 20h4l10.5-10.5a2.4 2.4 0 0 0-3.4-3.4L4.6 16.6 4 20Z"/><path d="m13.5 7.5 3 3"/></svg>
+          Route correction
+        </span>
+        <h1 class="page-head__title">Suggest an edit</h1>
+        <p class="page-head__desc">Fix a wrong stop, timing or fare. Route owners review suggestions; if you own this route, changes apply instantly.</p>
+      </div>
+
+      <!-- AUTH GATE -->
+      <div id="auth-gate" class="state-box" hidden>
+        <div class="state-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:30px;height:30px"><rect x="4.5" y="10" width="15" height="10" rx="2.5"/><path d="M8 10V7.5a4 4 0 0 1 8 0V10"/><path d="M12 14v2.5"/></svg>
+        </div>
+        <p class="state-title">Sign in to suggest an edit</p>
+        <p class="state-desc">Corrections come from real riders. Sign in so the route owner knows who to thank.</p>
+        <a class="btn btn-primary" id="login-link" href="/login?redirect=%2F">Sign in to continue</a>
+      </div>
+
+      <!-- LOADING -->
+      <div id="loading-state" hidden>
+        <div class="form-card">
+          <div class="skeleton skeleton-line w-40" style="height:18px;margin-bottom:14px"></div>
+          <div class="skeleton skeleton-line w-80" style="margin-bottom:10px"></div>
+          <div class="skeleton skeleton-line w-60" style="margin-bottom:10px"></div>
+          <div class="skeleton skeleton-line w-80"></div>
+        </div>
+      </div>
+
+      <!-- ERROR -->
+      <div id="load-error" class="state-box" hidden>
+        <div class="state-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:30px;height:30px"><path d="M12 4 2.8 20h18.4L12 4Z"/><path d="M12 10v4.5"/><path d="M12 17.5h.01"/></svg>
+        </div>
+        <p class="state-title" id="load-error-title">Could not load this route</p>
+        <p class="state-desc" id="load-error-desc">The bus may have been removed, or the link is incomplete.</p>
+        <a class="btn btn-secondary" href="/search">Back to search</a>
+      </div>
+
+      <!-- FORM CARD -->
+      <div id="edit-form-card" class="form-card" hidden>
+        <div id="request-sent-panel" class="state-box" style="display:none">
+          <div class="state-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="width:30px;height:30px"><path d="M4 6.5 12 12l8-5.5"/><rect x="3.5" y="5" width="17" height="14" rx="2.2"/></svg>
+          </div>
+          <p class="state-title" id="request-result-title">Request sent</p>
+          <p class="state-desc" id="request-result-desc">Your suggestion has been sent to the route owner for review.</p>
+          <div class="empty-actions">
+            <a class="btn btn-primary" id="back-to-route" href="/search">Back to search</a>
+            <a class="btn btn-secondary" href="/profile">My contributions</a>
+          </div>
         </div>
 
-        <div id="loading-state" style="text-align:center; padding:40px;">
-           <div class="loading-spinner"></div>
-           <p style="margin-top:12px; color:var(--color-text-secondary);">Loading bus details...</p>
+        <div id="edit-heading">
+          <div class="section-title">
+            <span class="step-no">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="width:13px;height:13px"><path d="M4 20h4l10.5-10.5a2.4 2.4 0 0 0-3.4-3.4L4.6 16.6 4 20Z"/><path d="m13.5 7.5 3 3"/></svg>
+            </span>
+            <span id="edit-heading-text">Edit bus details</span>
+          </div>
+          <p class="field-help" id="edit-route-summary">Loading route…</p>
+          <div class="form-divider"></div>
         </div>
-        <form id="edit-bus-form" style="display:none;">
+
+        <form id="edit-bus-form" novalidate>
           <input type="hidden" id="edit-bus-id" />
-          
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-            <div class="field-group">
-              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Bus Name</label>
-              <input type="text" id="edit-bus-name" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+
+          <div id="edit-alert" class="alert" role="status" aria-live="polite"></div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="edit-bus-name">Bus name</label>
+              <input id="edit-bus-name" class="form-input" type="text" required />
             </div>
-            <div class="field-group">
-              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Bus Number</label>
-              <input type="text" id="edit-bus-number" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            <div class="field">
+              <label for="edit-bus-number">
+                Bus number
+                <span class="optional-tag">Optional</span>
+              </label>
+              <input id="edit-bus-number" class="form-input" type="text" />
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-            <div class="field-group">
-              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Bus Type</label>
-              <select id="edit-bus-type" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); background:var(--color-surface); color:var(--color-text); box-sizing:border-box;">
-                <option value="Government">Government</option>
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="edit-bus-type">Service type</label>
+              <select id="edit-bus-type" class="form-select">
+                <option value="Government">Government (ordinary)</option>
                 <option value="Private">Private</option>
                 <option value="Deluxe">Deluxe</option>
-                <option value="Fast">Fast</option>
+                <option value="Fast">Fast / express</option>
               </select>
             </div>
-            <div class="field-group">
-              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Operator</label>
-              <input type="text" id="edit-operator" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            <div class="field">
+              <label for="edit-operator">
+                Operator
+                <span class="optional-tag">Optional</span>
+              </label>
+              <input id="edit-operator" class="form-input" type="text" placeholder="e.g. TNSTC" />
             </div>
           </div>
 
-          <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:12px;">
-            <div class="field-group">
-              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">From (Start)</label>
-              <input type="text" id="edit-start-stop" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+          <div class="form-divider"></div>
+          <div class="section-title"><span class="step-no">2</span>Route</div>
+
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="edit-start-stop">Starting spot</label>
+              <input id="edit-start-stop" class="form-input" type="text" required />
             </div>
-            <div class="field-group">
-              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">To (Destination)</label>
-              <input type="text" id="edit-destination-stop" required style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            <div class="field">
+              <label for="edit-destination-stop">Destination</label>
+              <input id="edit-destination-stop" class="form-input" type="text" required />
             </div>
           </div>
 
-          <div class="field-group" style="margin-bottom:12px;">
-            <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">
-              Spots with Timing (Route Sequence)
+          <div class="field">
+            <label for="edit-stop-timings">Stops in order</label>
+            <textarea id="edit-stop-timings" class="form-input" rows="5" placeholder="Gandhipuram @ 06:00 AM&#10;Town Hall @ 06:20 AM&#10;Ukkadam @ 06:45 AM"></textarea>
+            <p class="field-help">One stop per line. Add a time after <code>@</code> or in brackets. Order them exactly as the bus travels.</p>
+          </div>
+
+          <div class="field">
+            <label for="edit-boarded-stops">
+              Via stops
+              <span class="optional-tag">Optional</span>
             </label>
-            <p style="font-size:11px; color:var(--color-text-muted); margin-bottom:6px;">
-              Specify spots along the route with timing, e.g. Gandhipuram (06:00 AM), Town Hall (06:20 AM), Ukkadam (06:45 AM)
-            </p>
-            <input type="text" id="edit-stop-timings" placeholder="e.g. Gandhipuram (06:00 AM), Town Hall (06:20 AM), Ukkadam (06:45 AM)" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            <input id="edit-boarded-stops" class="form-input" type="text" placeholder="Town Hall, Sungam, Peelamedu" />
+            <p class="field-help">Only used when the stop list above is empty.</p>
           </div>
 
-          <div class="field-group" style="margin-bottom:12px;">
-            <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Boarded / Via Stops</label>
-            <input type="text" id="edit-boarded-stops" placeholder="e.g. Town Hall, Sungam, Peelamedu" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
-          </div>
+          <div class="form-divider"></div>
+          <div class="section-title"><span class="step-no">3</span>Schedule &amp; fare</div>
 
-          <div style="display:grid; grid-template-columns:2fr 1fr; gap:12px; margin-bottom:16px;">
-            <div class="field-group">
-              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Bus Timings (AM/PM)</label>
-              <input type="text" id="edit-bus-timings" placeholder="e.g. 06:20 AM, 08:30 AM, 02:15 PM" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+          <div class="form-grid-2">
+            <div class="field">
+              <label for="edit-bus-timings">Daily departure timings</label>
+              <input id="edit-bus-timings" class="form-input" type="text" placeholder="06:20 AM, 08:30 AM, 02:15 PM" />
+              <p class="field-help">Separate each trip with a comma.</p>
             </div>
-            <div class="field-group">
-              <label style="font-size:12px; font-weight:700; color:var(--color-text); margin-bottom:4px; display:block;">Fare (₹)</label>
-              <input type="number" step="0.5" id="edit-bus-fare" style="width:100%; height:40px; padding:0 12px; border:1px solid var(--color-border); border-radius:var(--radius-sm); box-sizing:border-box; background:var(--color-surface); color:var(--color-text);" />
+            <div class="field">
+              <label for="edit-bus-fare">Fare (₹)</label>
+              <input id="edit-bus-fare" class="form-input" type="number" min="0" step="0.5" inputmode="decimal" />
             </div>
           </div>
 
-          <div id="edit-alert" class="alert" style="display:none; margin-bottom:12px;"></div>
-
-          <div style="display:flex; justify-content:flex-end; gap:10px;">
-            <button type="button" onclick="history.back()" class="btn-secondary" style="height:42px; padding:0 16px;">Cancel</button>
-            <button type="submit" id="save-edit-btn" class="btn-primary" style="height:42px; padding:0 20px;">Request Change</button>
+          <div class="form-actions">
+            <button type="button" class="btn btn-ghost" id="cancel-edit-btn">Cancel</button>
+            <button type="submit" id="save-edit-btn" class="btn btn-primary">Send suggestion</button>
           </div>
         </form>
       </div>
-      <div style="margin: 24px auto 16px; text-align: center; font-size: 11px; line-height: 1.5; color: var(--color-text-secondary); opacity: 0.85; max-width: 500px; padding: 0 16px;">
-        <strong>Disclaimer:</strong> TN FOR BUS is an independent, community-driven transit directory. It is not affiliated with, authorized, or endorsed by TNSTC, SETC, or the Government of Tamil Nadu.
-      </div>
-    </div>
-  </main>
 
+      <p class="disclaimer">
+        <strong>Disclaimer:</strong> TN FOR BUS is an independent, community-maintained transit guide. It is not affiliated with, authorised, or endorsed by TNSTC, SETC, or the Government of Tamil Nadu. <a href="/about">About &amp; disclaimers</a>
+      </p>
+    </main>
+  </div>
+
+  <nav class="bottom-nav" aria-label="Primary navigation">
+    <a class="nav-item" href="/">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3.5 10.5 8.5-7 8.5 7"/><path d="M5.5 9.5V20h13V9.5"/><path d="M9.5 20v-5.5h5V20"/></svg></span>
+      <span>Home</span>
+    </a>
+    <a class="nav-item" href="/search">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.2-3.2"/></svg></span>
+      <span>Search</span>
+    </a>
+    <a class="nav-item nav-item--cta" href="/report">
+      <span class="nav-icon-wrap"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg></span>
+      <span>Add bus</span>
+    </a>
+    <a class="nav-item" href="/profile">
+      <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.6"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/></svg></span>
+      <span>Profile</span>
+    </a>
+  </nav>
 
   <script src="js/api.js"></script>
+  <script src="js/ui.js"></script>
   <script src="js/auth.js"></script>
   <script src="js/theme.js"></script>
   <script src="js/edit.js"></script>

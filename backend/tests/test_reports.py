@@ -77,6 +77,34 @@ def test_report_with_multiple_spots_and_timing(client, make_user, login_as):
     assert bus_data["spots"][1]["time"] == "06:20 AM"
 
 
+def test_report_persists_bus_type_timings_and_fare(client, make_user, login_as):
+    user = make_user(google_id="fields-user", email="fields@example.com")
+    login_as(user)
+    resp = client.post("/api/reports", json={
+        "bus_name": "Field Express",
+        "bus_number": "TN 38 N 1234",
+        "operator": "TNSTC",
+        "bus_type": "deluxe",
+        "boarding_stop": "Chennai",
+        "destination_stop": "Coimbatore",
+        "boarding_time": (datetime.now(timezone.utc) + timedelta(minutes=10)).isoformat(),
+        "bus_fare": 250,
+        "bus_timings": "06:00 AM, 09:30 AM",
+        "spots": [
+            {"stop": "Chennai", "time": "06:00 AM"},
+            {"stop": "Salem", "time": "08:15 AM"},
+            {"stop": "Coimbatore", "time": "09:30 AM"},
+        ],
+    })
+    assert resp.status_code == 201
+    bus = resp.get_json()["data"]
+    assert bus["bus_type"] == "Deluxe"
+    assert bus["bus_fare"] == 250.0
+    assert "06:00 AM" in bus["bus_timings"]
+    assert "09:30 AM" in bus["bus_timings"]
+    assert len(bus["spots"]) == 3
+
+
 def test_report_merges_new_stop_into_existing_bus(client, make_user, login_as):
     user = make_user()
     login_as(user)

@@ -60,20 +60,40 @@ class BaseConfig:
     # --- Google OAuth ---
     GOOGLE_CLIENT_ID = _env("GOOGLE_CLIENT_ID", "")
     GOOGLE_CLIENT_SECRET = _env("GOOGLE_CLIENT_SECRET", "")
-    GOOGLE_REDIRECT_URI = _env("GOOGLE_REDIRECT_URI", "http://localhost:5000/api/auth/callback")
+    # Leave empty to derive https://<current-host>/api/auth/callback at request
+    # time. Set explicitly only if Google Console uses a different host.
+    GOOGLE_REDIRECT_URI = _env("GOOGLE_REDIRECT_URI", "")
     GOOGLE_DISCOVERY_URL = "https://accounts.google.com/.well-known/openid-configuration"
+
+    # --- Proxy / TLS ---
+    TRUST_PROXY = _env("TRUST_PROXY", "false").lower() == "true"
 
     # --- Session / cookies ---
     SESSION_COOKIE_HTTPONLY = True
     SESSION_COOKIE_SAMESITE = "Lax"
     SESSION_COOKIE_SECURE = _env("SESSION_COOKIE_SECURE", "false").lower() == "true"
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
+    REMEMBER_COOKIE_HTTPONLY = True
+    REMEMBER_COOKIE_SAMESITE = "Lax"
+    REMEMBER_COOKIE_SECURE = SESSION_COOKIE_SECURE
+    REMEMBER_COOKIE_DURATION = timedelta(days=30)
+
+    # --- CSRF (double-submit token) ---
+    CSRF_ENABLED = _env("CSRF_ENABLED", "true").lower() == "true"
+    CSRF_COOKIE_NAME = "tn_csrf"
+    CSRF_HEADER_NAME = "X-CSRF-Token"
+
+    # --- Request size limits ---
+    MAX_CONTENT_LENGTH = 48 * 1024 * 1024  # photo uploads (8 x 5 MB + form overhead)
+    MAX_JSON_PAYLOAD_BYTES = 512 * 1024
 
     # --- CORS ---
     FRONTEND_ORIGIN = _env("FRONTEND_ORIGIN", "http://localhost:8080")
 
     # --- Rate limiting ---
     RATELIMIT_STORAGE_URI = _env("RATELIMIT_STORAGE_URI", "memory://")
+    RATELIMIT_HEADERS_ENABLED = True
+    PREFERRED_URL_SCHEME = "http"
     SUPABASE_URL = _env("SUPABASE_URL", "")
     SUPABASE_SERVICE_KEY = _env("SUPABASE_SERVICE_KEY", "")
     SUPABASE_BUCKET = _env("SUPABASE_BUCKET", "bus-photos")
@@ -92,11 +112,17 @@ class TestingConfig(BaseConfig):
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     WTF_CSRF_ENABLED = False
+    CSRF_ENABLED = False
+    RATELIMIT_ENABLED = False
 
 
 class ProductionConfig(BaseConfig):
     DEBUG = False
     SESSION_COOKIE_SECURE = True
+    REMEMBER_COOKIE_SECURE = True
+    PREFERRED_URL_SCHEME = "https"
+    # Deployed behind Vercel's proxy, which terminates TLS.
+    TRUST_PROXY = _env("TRUST_PROXY", "true").lower() == "true"
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
@@ -120,6 +146,36 @@ class ProductionConfig(BaseConfig):
             raise RuntimeError(
                 "FATAL: DATABASE_URL is not set. "
                 "Set a valid PostgreSQL connection string in your environment variables."
+            )
+
+        # CORS/redirect origins must be TLS and never a local dev host in prod.
+        origins = [
+            origin.strip()
+            for origin in (os.environ.get("FRONTEND_ORIGIN") or "").split(",")
+            if origin.strip()
+        ]
+        for origin in origins:
+            lowered = origin.lower()
+            if not lowered.startswith("https://") or "localhost" in lowered or "127.0.0.1" in lowered:
+                raise RuntimeError(
+                    "FATAL: FRONTEND_ORIGIN must be an https:// origin in production "
+                    f"(got {origin!r})."
+                )
+
+        redirect_uri = (os.environ.get("GOOGLE_REDIRECT_URI") or "").strip()
+        if redirect_uri and not redirect_uri.lower().startswith("https://"):
+            raise RuntimeError(
+                "FATAL: GOOGLE_REDIRECT_URI must use https:// in production."
+            )
+
+        if (os.environ.get("RATELIMIT_STORAGE_URI") or "memory://").startswith("memory://"):
+            import warnings
+
+            warnings.warn(
+                "RATELIMIT_STORAGE_URI uses in-memory storage. On serverless/multi-instance "
+                "deployments rate limits are not shared. Configure Redis/Upstash for production.",
+                RuntimeWarning,
+                stacklevel=2,
             )
 
 
